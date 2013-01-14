@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Name translation for GONOGO data of svui recording</title>
+<link rel="stylesheet" type="text/css" href="../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>svui_translation-gonogo.ini</h1>
+<p><a href="name_translation_files.htm">Back to Name translation files</a></p>
+<p><a href="directory.htm">SOMSDS/lib/</a></p>
+<div class="highlight"><pre><span class="c">#</span>
+<span class="c"># Name translation file for the GO-NOGO data of the svui recording</span>
+<span class="c">#</span>
+<span class="c"># German Gomez-Herrero, g.gomez@nin.knaw.nl</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c"># Description: Name translation for GONOGO data of svui recording</span>
+<span class="c"># Documentation: name_translation_files.txt</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c"># Translation rules</span>
+<span class="k">[subject_id]</span>
+<span class="na">regexp</span><span class="o">=</span><span class="s">&quot;s|.*vurs_(\d\d\d\d).*$|$1|&quot;</span>
+<span class="p"></span>
+<span class="k">[modality_id]</span>
+<span class="na">regexp</span><span class="o">=</span><span class="s">&quot;s%^.+/(eeg)/.+\..+$%$1%&quot;</span>
+<span class="p"></span>
+<span class="k">[device_id]</span>
+<span class="c"># All files were obtained with the egi256 device</span>
+<span class="na">regexp</span><span class="o">=</span><span class="s">&quot;s%.+%egi256%&quot;</span>
+<span class="p"></span>
+<span class="k">[condition_id]</span>
+<span class="na">regexp</span><span class="o">=</span><span class="s">&quot;s%^.+/eeg/orig/.+(GOSD|GOS).*$%$1%&quot;</span>
+<span class="p"></span>
+<span class="k">[condition_id_map]</span>
+<span class="c"># Mapping from old condition IDs to new condition ids</span>
+<span class="na">GOSD</span><span class="o">=</span><span class="s">go-sd</span>
+<span class="na">GOS</span><span class="o">=</span><span class="s">go-ns</span>
+<span class="p"></span>
+<span class="k">[block_id]</span>
+<span class="na">regexp</span><span class="o">=</span><span class="s">&quot;s%.+/eeg/orig/.+(\d\d\d)\.(GOSD|GOS).+\.raw$%$1%&quot;</span>
+<span class="p"></span>
+<span class="c"># Regular expression that matches the file names of files to which </span>
+<span class="c"># a symbolic link needs to be generated</span>
+<span class="k">[file_id]</span>
+<span class="na">regexp</span> <span class="o">=</span><span class="s">&quot;^.*import/.+/eeg/orig/.+(GOS|GOSD).*\.raw$&quot;</span>
+</pre></div>
+
+<p><span class="p"></span></p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 21.06.2012 15:23.</p>
+</div>
+</div>
+</body>
+</html>

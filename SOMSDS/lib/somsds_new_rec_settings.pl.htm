@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Create a template recording settings file</title>
+<link rel="stylesheet" type="text/css" href="../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>somsds_new_rec_settings.pl</h1>
+<p><a href="utilities.htm">Back to Utility scripts</a></p>
+<p><a href="directory.htm">SOMSDS/lib/</a></p>
+<div class="highlight"><pre><span class="c1">#!/usr/bin/perl</span>
+<span class="c1"># (c) German Gomez-Herrero, g.gomez@nin.knaw.nl</span>
+<span class="p"></span>
+<span class="c1"># Description: Create a template recording settings file</span>
+<span class="c1"># Documentation: utilities.txt</span>
+<span class="p"></span>
+<span class="k">use</span> <span class="n">SOMSDS</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Getopt::</span><span class="n">Long</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Config::</span><span class="n">IniFiles</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">use</span> <span class="n">strict</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">warnings</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">sub </span><span class="nf">subject_ids</span><span class="p">($$);</span>
+<span class="p"></span>
+<span class="p">my $filename;</span>
+<span class="p">my @subjects_in;</span>
+<span class="p">my @modalities;</span>
+<span class="p">my @conditions;</span>
+<span class="p">my $responsible;</span>
+<span class="p">my $description;</span>
+<span class="p">my $help;</span>
+<span class="p"></span>
+<span class="p">my @techniques;</span>
+<span class="p">my @devices;</span>
+<span class="p">my @sessions;</span>
+<span class="p">my @blocks;</span>
+<span class="p">my @subjprops = qw(sex age);</span>
+<span class="p">my @modprops;</span>
+<span class="p">my @condprops = qw(description);</span>
+<span class="p"></span>
+<span class="p">GetOptions( &quot;filename=s&quot;              =&gt; \$filename, </span>
+<span class="p">            &quot;subjects|subject=s&quot;      =&gt; \@subjects_in,</span>
+<span class="p">                &quot;modalities|modality=s&quot;   =&gt; \@modalities,</span>
+<span class="p">                  &quot;conditions|condition=s&quot;  =&gt; \@conditions,</span>
+<span class="p">            &quot;responsible=s&quot;           =&gt; \$responsible,</span>
+<span class="p">            &quot;description=s&quot;           =&gt; \$description,</span>
+<span class="p">            &quot;help&quot;                    =&gt; \$help, </span>
+<span class="p">            &quot;technique|techniques=s&quot;  =&gt; \@techniques,</span>
+<span class="p">            &quot;device|devices=s&quot;        =&gt; \@devices, </span>
+<span class="p">            &quot;session|sessions=s&quot;      =&gt; \@sessions,</span>
+<span class="p">            &quot;blocks|block=s&quot;          =&gt; \@blocks,</span>
+<span class="p">            &quot;subjprops=s&quot;             =&gt; \@subjprops,</span>
+<span class="p">            &quot;modprops=s&quot;              =&gt; \@modprops,</span>
+<span class="p">            &quot;condprops=s&quot;             =&gt; \@condprops);</span>
+<span class="p">            </span>
+<span class="p"># Recording ID</span>
+<span class="p">my $id = shift;</span>
+<span class="p"></span>
+<span class="p">if ($help || !$id){</span>
+  <span class="k">print</span> <span class="s">&quot;* Creates a template text file with recording settings</span>
+<span class="s">  </span>
+<span class="s">  Usage: </span>
+<span class="s">  </span>
+<span class="s">  perl somsds_new_rec_setttings  recid [--options]</span>
+<span class="p"></span>
+<span class="s">  Where:</span>
+<span class="p"></span>
+<span class="s">  recid           Recording ID</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="s">  ## COMMON OPTIONS:</span>
+<span class="p"></span>
+<span class="s">  --filename      Name of the settings file. By default: [recid]_settings.ini</span>
+<span class="p"></span>
+<span class="s">  --subjects      Comma separated list of subjects, e.g.: 1,2,3 or 1..6 </span>
+<span class="p"></span>
+<span class="s">  --modalities    Comma separated list of modalities, e.g.: eeg, meg, smri. Note </span>
+<span class="s">                  that the provided modalities must be listed as valid in the </span>
+<span class="s">                  configuration file /etc/SOMSDS.etc. </span>
+<span class="p"></span>
+<span class="s">  --conditions    Comma separated list of conditions, e.g.: rs-eo,rs-ec</span>
+<span class="p"></span>
+<span class="s">  --responsible   Username of the researcher responsible of the recording. This </span>
+<span class="s">                  user will be granted ownwership of the recording folder</span>
+<span class="p"></span>
+<span class="s">  --description   Free form description of the recording</span>
+<span class="p"></span>
+<span class="s">  --help          Displays this help. Run &#39;perldoc SOMSDS&#39; for more help</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="s">  ## LESS COMMON OPTIONS:</span>
+<span class="p"></span>
+<span class="s">  --techniques    Comma separated list of techniques, e.g. t1, dti, dist, prox</span>
+<span class="s">                  Note that the provided techniques must be listed as valid in </span>
+<span class="s">                  configuration file /etc/SOMSDS.etc</span>
+<span class="p"></span>
+<span class="s">  --device        Comma separated list of devices, e.g. philips-spinoza, </span>
+<span class="s">                  philips-amc, ge-vu</span>
+<span class="s">                  Note that the provided devices must be listed as valid in </span>
+<span class="s">                  /etc/SOMSDS.etc</span>
+<span class="p"></span>
+<span class="s">  --sessions      Comma separated list of session IDs. Sessions IDs do not need</span>
+<span class="s">                  to be numeric, e.g. before-sleep, after-sleep</span>
+<span class="p"></span>
+<span class="s">  --blocks        Comma separated list of block IDs, e.g. 1,3,5                  </span>
+<span class="s">  </span>
+<span class="s">  --subjprops     Comma separated list of properties (i.e. &#39;features&#39;) of each</span>
+<span class="s">                  subject that should be specified in the configuration file. By</span>
+<span class="s">                  default the following subject properties will be considered:</span>
+<span class="s">                  sex, age, notes </span>
+<span class="p"></span>
+<span class="s">  --modprops      Comma separated list of properties for each modality. By </span>
+<span class="s">                  default: ext, techniques, description. The ext property is  </span>
+<span class="s">                  a list of accepted file extensions for the modality. The </span>
+<span class="s">                  techniques property is a list of accepted techniques.</span>
+<span class="p"></span>
+<span class="s">  --condprops     Comma separated list of properties for each condition. By </span>
+<span class="s">                  default: description\n&quot;</span><span class="p">;</span>
+  <span class="nb">die</span> <span class="s">&quot;\n&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="c1"># Generate subject ids of the form 000x</span>
+<span class="k">my</span> <span class="nv">$subjects</span>  <span class="o">=</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@subjects_in</span><span class="p">);</span>
+<span class="k">my</span> <span class="nv">@subjects</span> <span class="o">=</span> <span class="p">();</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$subjects</span><span class="p">){</span>
+  <span class="k">my</span> <span class="nv">@tmp_subjects</span> <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/\s*,\s*/</span><span class="p">,</span> <span class="nv">$subjects</span><span class="p">);</span> 
+  <span class="k">foreach</span> <span class="p">(</span><span class="nv">@tmp_subjects</span><span class="p">){</span>    
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$_</span> <span class="o">=~</span> <span class="sr">m/(\d+)\.\.(\d+)/</span><span class="p">){</span>      
+      <span class="k">my</span> <span class="nv">@this_subjects</span> <span class="o">=</span> <span class="n">subject_ids</span><span class="p">(</span><span class="nv">$1</span><span class="p">,</span> <span class="nv">$2</span><span class="p">);</span>  
+      <span class="nv">@subjects</span> <span class="o">=</span> <span class="p">(</span><span class="nv">@subjects</span><span class="p">,</span> <span class="nv">@this_subjects</span><span class="p">);</span>      
+    <span class="p">}</span><span class="k">elsif</span> <span class="p">(</span><span class="nv">$_</span> <span class="o">=~</span> <span class="sr">m/^\d+$/</span><span class="p">){</span>
+      <span class="nb">push</span> <span class="nv">@subjects</span><span class="p">,</span> <span class="n">subject_ids</span><span class="p">(</span><span class="nv">$_</span><span class="p">,</span> <span class="nv">$_</span><span class="p">);</span>  
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+      <span class="nb">push</span> <span class="nv">@subjects</span><span class="p">,</span> <span class="nv">$_</span><span class="p">;</span>    
+    <span class="p">}</span>    
+  <span class="p">}</span>
+<span class="p">}</span>    
+<span class="p"></span>
+<span class="nv">@modalities</span>   <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@modalities</span><span class="p">));</span>
+<span class="nv">@conditions</span>   <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@conditions</span><span class="p">));</span> 
+<span class="nv">@techniques</span>   <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@techniques</span><span class="p">));</span> 
+<span class="nv">@devices</span>      <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@devices</span><span class="p">));</span> 
+<span class="nv">@sessions</span>     <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@sessions</span><span class="p">));</span> 
+<span class="nv">@blocks</span>       <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@blocks</span><span class="p">));</span> 
+<span class="p"></span>
+<span class="nv">@subjprops</span>    <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@subjprops</span><span class="p">));</span> 
+<span class="nv">@modprops</span>     <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@modprops</span><span class="p">));</span> 
+<span class="nv">@condprops</span>    <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@modprops</span><span class="p">));</span> 
+<span class="p"></span>
+<span class="c1"># Default file name</span>
+<span class="k">unless</span> <span class="p">(</span><span class="nv">$filename</span><span class="p">){</span>
+  <span class="nv">$filename</span> <span class="o">=</span> <span class="nv">$id</span><span class="o">.</span><span class="s">&#39;_settings.ini&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$options</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s">&#39;recid&#39;</span>           <span class="o">=&gt;</span> <span class="nv">$id</span><span class="p">,</span>
+  <span class="s">&#39;filename&#39;</span>        <span class="o">=&gt;</span> <span class="nv">$filename</span><span class="p">,</span>
+  <span class="s">&#39;subject&#39;</span>         <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@subjects</span><span class="p">,</span> 
+  <span class="s">&#39;modality&#39;</span>        <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@modalities</span><span class="p">,</span>
+  <span class="s">&#39;condition&#39;</span>       <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@conditions</span><span class="p">,</span>
+  <span class="s">&#39;responsible&#39;</span>     <span class="o">=&gt;</span> <span class="nv">$responsible</span><span class="p">,</span>
+  <span class="s">&#39;description&#39;</span>     <span class="o">=&gt;</span> <span class="nv">$description</span><span class="p">,</span>
+  <span class="s">&#39;device&#39;</span>          <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@devices</span><span class="p">,</span>
+  <span class="s">&#39;technique&#39;</span>       <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@techniques</span><span class="p">,</span>
+  <span class="s">&#39;session&#39;</span>         <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@sessions</span><span class="p">,</span>
+  <span class="s">&#39;block&#39;</span>           <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@blocks</span><span class="p">,</span>
+  <span class="s">&#39;subject_props&#39;</span>   <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@subjprops</span><span class="p">,</span>
+  <span class="s">&#39;modality_props&#39;</span>  <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@modprops</span><span class="p">,</span>
+  <span class="s">&#39;condition_props&#39;</span> <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@condprops</span><span class="p">};</span>
+<span class="p"></span>
+<span class="nn">SOMSDS::</span><span class="n">new_rec_settings</span><span class="p">(</span><span class="nv">$options</span><span class="p">);</span>
+<span class="p"></span>
+<span class="k">sub </span><span class="nf">subject_ids</span><span class="p">($$)</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$first</span><span class="p">,</span> <span class="nv">$last</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">@ids</span> <span class="o">=</span> <span class="p">();</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$i</span><span class="o">=</span><span class="nv">$first</span><span class="p">;</span> <span class="nv">$i</span><span class="o">&lt;=</span><span class="nv">$last</span><span class="p">;</span> <span class="o">++</span><span class="nv">$i</span><span class="p">){</span>
+    <span class="nb">push</span> <span class="nv">@ids</span><span class="p">,</span> <span class="s">&quot;0&quot;</span><span class="n">x</span><span class="p">(</span><span class="mi">4</span><span class="o">-</span><span class="nb">length</span><span class="p">(</span><span class="s">&quot;$i&quot;</span><span class="p">))</span><span class="o">.</span><span class="s">&quot;$i&quot;</span><span class="p">;</span>    
+  <span class="p">}</span>
+  <span class="nv">@ids</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+
+<p><span class="p"></span></p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 26.03.2012 15:40.</p>
+</div>
+</div>
+</body>
+</html>

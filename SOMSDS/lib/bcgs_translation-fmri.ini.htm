@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Translates fMRI filenames of recording `bcgs`</title>
+<link rel="stylesheet" type="text/css" href="../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>bcgs_translation-fmri.ini</h1>
+<p><a href="name_translation_files.htm">Back to Name translation files</a></p>
+<p><a href="directory.htm">SOMSDS/lib/</a></p>
+<div class="highlight"><pre><span class="c"># Translation file for the fMRI modality of recording bcgs</span>
+<span class="p"></span>
+<span class="c"># Description: Translates fMRI filenames of recording `bcgs`</span>
+<span class="c"># Documentation: name_translation_files.txt </span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="k">[block_id]</span>
+<span class="c"># Translation from file name to block id</span>
+<span class="na">regexp</span><span class="o">=</span><span class="s">&quot;s%^.+_(\d+)_(\d+)\..+$%$1-$2%&quot;</span>
+<span class="p"></span>
+<span class="k">[file_id]</span>
+<span class="c"># This regular expression matches all files to which links might be generated</span>
+<span class="na">regexp</span> <span class="o">=</span><span class="s">&quot;.+/fmri/.+\.nii$&quot;</span>
+</pre></div>
+
+<p><span class="p"></span></p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 21.06.2012 15:23.</p>
+</div>
+</div>
+</body>
+</html>

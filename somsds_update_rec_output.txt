@@ -1,0 +1,120 @@
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-scan_4.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-scan/inside_scan_GGH_run4.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-scan_3.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-scan/inside_scan_GGH_run3.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-scan_1.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-scan/inside_scan_GGH_run1.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-scan_2.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-scan/inside_scan_GGH_run2.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-noscan_3.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-noscan/inside_noscan_GGH_run3.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-noscan_1.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-noscan/inside_noscan_GGH_run1.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-noscan_2.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-noscan/inside_noscan_GGH_run2.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_in-noscan_4.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/in-noscan/inside_noscan_GGH_run4.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_out_4.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/out/outside_GGH_run4.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_out_3.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/out/outside_GGH_run3.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_out_1.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/out/outside_GGH_run1.mff
+
+/data/recordings/bcgs/subjects/0001/eeg/raw/bcgs_0001_eeg_out_2.mff 
+-->> /data/recordings/bcgs/subjects/0001/eeg/orig/out/outside_GGH_run2.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-scan_2.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-scan/inside_scan_JM_run2.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-scan_1.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-scan/inside_scan_JM_run1.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-scan_3.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-scan/inside_scan_JM_run3.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-scan_4.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-scan/inside_scan_JM_run4.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-noscan_3.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-noscan/inside_noscan_JM_run3.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-noscan_2.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-noscan/inside_noscan_JM_run2.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-noscan_4.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-noscan/inside_noscan_JM_run4.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_in-noscan_1.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/in-noscan/inside_noscan_JM_run1.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_out_1.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/out/outside_JM_run1.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_out_2.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/out/outside_JM_run2.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_out_3.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/out/outside_JM_run3.mff
+
+/data/recordings/bcgs/subjects/0002/eeg/raw/bcgs_0002_eeg_out_4.mff 
+-->> /data/recordings/bcgs/subjects/0002/eeg/orig/out/outside_JM_run4.mff
+
+Created 24 symbolic links
+Inserting files of recording 'bcgs' to the DB...100%
+/data/recordings/bcgs/subjects/0001/smri/raw/bcgs_0001_smri_b1.nii 
+-->> /data/recordings/bcgs/subjects/0001/smri/orig/ger001_WIP_c32_cap_B1_SENSE_FSL_8_1.nii
+
+/data/recordings/bcgs/subjects/0001/smri/raw/bcgs_0001_smri_sbrain.nii 
+-->> /data/recordings/bcgs/subjects/0001/smri/orig/ger001_WIP_SmartBrain_FSL_1_1.nii
+
+/data/recordings/bcgs/subjects/0001/smri/raw/bcgs_0001_smri_t1.nii 
+-->> /data/recordings/bcgs/subjects/0001/smri/orig/ger001_WIP_c32_cap_T1_SENSE_FSL_9_1.nii
+
+/data/recordings/bcgs/subjects/0002/smri/raw/bcgs_0002_smri_b0.nii 
+-->> /data/recordings/bcgs/subjects/0002/smri/orig/ger001_WIP_c32_cap_B0_SENSE_FSL_18_1.nii
+
+/data/recordings/bcgs/subjects/0002/smri/raw/bcgs_0002_smri_t1.nii 
+-->> /data/recordings/bcgs/subjects/0002/smri/orig/ger001_WIP_c32_cap_T1_SENSE_FSL_16_1.nii
+
+/data/recordings/bcgs/subjects/0002/smri/raw/bcgs_0002_smri_b1.nii 
+-->> /data/recordings/bcgs/subjects/0002/smri/orig/ger001_WIP_c32_cap_B1_SENSE_FSL_17_1.nii
+
+Created 6 symbolic links
+Inserting files of recording 'bcgs' to the DB...100%
+/data/recordings/bcgs/subjects/0001/fmri/raw/bcgs_0001_fmri_4-1.nii 
+-->> /data/recordings/bcgs/subjects/0001/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_4_1.nii
+
+/data/recordings/bcgs/subjects/0001/fmri/raw/bcgs_0001_fmri_5-1.nii 
+-->> /data/recordings/bcgs/subjects/0001/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_5_1.nii
+
+/data/recordings/bcgs/subjects/0001/fmri/raw/bcgs_0001_fmri_3-1.nii 
+-->> /data/recordings/bcgs/subjects/0001/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_3_1.nii
+
+/data/recordings/bcgs/subjects/0001/fmri/raw/bcgs_0001_fmri_7-1.nii 
+-->> /data/recordings/bcgs/subjects/0001/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_7_1.nii
+
+/data/recordings/bcgs/subjects/0002/fmri/raw/bcgs_0002_fmri_12-1.nii 
+-->> /data/recordings/bcgs/subjects/0002/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_12_1.nii
+
+/data/recordings/bcgs/subjects/0002/fmri/raw/bcgs_0002_fmri_14-1.nii 
+-->> /data/recordings/bcgs/subjects/0002/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_14_1.nii
+
+/data/recordings/bcgs/subjects/0002/fmri/raw/bcgs_0002_fmri_15-1.nii 
+-->> /data/recordings/bcgs/subjects/0002/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_15_1.nii
+
+/data/recordings/bcgs/subjects/0002/fmri/raw/bcgs_0002_fmri_13-1.nii 
+-->> /data/recordings/bcgs/subjects/0002/fmri/orig/ger001_WIP_c32_cap_check_SENSE_FSL_13_1.nii
+
+Created 8 symbolic links
+Inserting files of recording 'bcgs' to the DB...100%

@@ -1,0 +1,929 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>SOMSDS controller module</title>
+<link rel="stylesheet" type="text/css" href="../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>SOMSDS.pm</h1>
+<p><a href="core_stuff.htm">Back to Core stuff</a></p>
+<p><a href="directory.htm">SOMSDS/lib/</a></p>
+<div class="highlight"><pre><span class="c1">#!/usr/bin/perl</span>
+<span class="c1"># (c) German Gomez-Herrero, g.gomez@nin.knaw.nl</span>
+<span class="p"></span>
+<span class="c1"># Description: SOMSDS controller module</span>
+<span class="c1"># Documentation: core_stuff.txt</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="nb">package</span> <span class="n">SOMSDS</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">SOMSDS::</span><span class="n">Recording</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">SOMSDS::</span><span class="n">File</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">use</span> <span class="nn">Term::</span><span class="n">ANSIColor</span> <span class="sx">qw(:constants)</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">Carp</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">Cwd</span> <span class="s">&#39;abs_path&#39;</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">List::</span><span class="n">MoreUtils</span> <span class="sx">qw(none any)</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Config::</span><span class="n">IniFiles</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::</span><span class="n">Basename</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::Spec::</span><span class="n">Functions</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::</span><span class="n">Path</span> <span class="sx">qw(make_path)</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::</span><span class="n">Find</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::</span><span class="n">Copy</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::Copy::</span><span class="n">Recursive</span> <span class="sx">qw(dircopy)</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Time::</span><span class="n">Format</span> <span class="sx">qw(%time)</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Tie::Handle::</span><span class="n">CSV</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Archive::</span><span class="n">Tar</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">DBI</span><span class="p">;</span>
+<span class="p"></span>
+<span class="c1">#use 5.014001;</span>
+<span class="k">use</span> <span class="n">strict</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">warnings</span><span class="p">;</span>
+<span class="p"></span>
+<span class="nb">require</span> <span class="n">Exporter</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">our</span> <span class="nv">@ISA</span> <span class="o">=</span> <span class="sx">qw(Exporter)</span><span class="p">;</span>
+<span class="p"></span>
+<span class="c1"># Items to export into callers namespace by default. Note: do not export</span>
+<span class="c1"># names by default without a very good reason. Use EXPORT_OK instead.</span>
+<span class="c1"># Do not simply export all your public functions/methods/constants.</span>
+<span class="p"></span>
+<span class="c1"># This allows declaration  use SOMSDS &#39;:all&#39;;</span>
+<span class="c1"># If you do not need this, moving things directly into @EXPORT or @EXPORT_OK</span>
+<span class="c1"># will save memory.</span>
+<span class="k">our</span> <span class="nv">%EXPORT_TAGS</span> <span class="o">=</span> <span class="p">(</span> <span class="s">&#39;all&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span> <span class="sx">qw(</span>
+<span class="sx">   </span>
+<span class="sx">)</span> <span class="p">]</span> <span class="p">);</span>
+<span class="p"></span>
+<span class="k">our</span> <span class="nv">@EXPORT_OK</span> <span class="o">=</span> <span class="p">(</span> <span class="nv">@</span><span class="p">{</span> <span class="nv">$EXPORT_TAGS</span><span class="p">{</span><span class="s">&#39;all&#39;</span><span class="p">}</span> <span class="p">}</span> <span class="p">);</span>
+<span class="p"></span>
+<span class="k">our</span> <span class="nv">@EXPORT</span> <span class="o">=</span> <span class="sx">qw(</span>
+<span class="sx">   </span>
+<span class="sx">)</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">our</span> <span class="nv">$VERSION</span> <span class="o">=</span> <span class="s">&#39;0.01&#39;</span><span class="p">;</span>
+<span class="p"></span>
+<span class="c1"># Read configuration file SOMSDS.ini</span>
+<span class="k">my</span> <span class="p">(</span><span class="nv">$vol</span><span class="p">,</span> <span class="nv">$dir</span><span class="p">,</span> <span class="nv">$file</span><span class="p">)</span> <span class="o">=</span> <span class="nn">File::</span><span class="n">Spec</span><span class="o">-&gt;</span><span class="n">splitpath</span><span class="p">(</span><span class="nv">$0</span><span class="p">);</span>
+<span class="k">my</span> <span class="nv">$somsds_cfg_file</span><span class="p">;</span> 
+<span class="k">if</span> <span class="p">(</span><span class="nv">$vol</span><span class="p">){</span>
+  <span class="nv">$somsds_cfg_file</span> <span class="o">=</span> <span class="n">abs_path</span> <span class="n">catfile</span><span class="p">(</span><span class="nv">$vol</span><span class="p">,</span> <span class="nv">$dir</span><span class="p">,</span><span class="s">&#39;SOMSDS.ini&#39;</span><span class="p">);</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+  <span class="nv">$somsds_cfg_file</span> <span class="o">=</span> <span class="n">abs_path</span> <span class="n">catfile</span><span class="p">(</span><span class="nv">$dir</span><span class="p">,</span><span class="s">&#39;SOMSDS.ini&#39;</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$somsds_cfg_file</span><span class="p">){</span>
+  <span class="nv">$somsds_cfg_file</span> <span class="o">=</span> <span class="s">&#39;/etc/SOMSDS.ini&#39;</span><span class="p">;</span> 
+<span class="p">}</span> 
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$somsds_cfg</span> <span class="o">=</span> <span class="k">new</span> <span class="nn">Config::</span><span class="n">IniFiles</span><span class="p">(</span><span class="o">-</span><span class="n">file</span> <span class="o">=&gt;</span> <span class="nv">$somsds_cfg_file</span><span class="p">);</span>
+<span class="p"></span>
+<span class="c1">########################################################## PUBLIC STATIC METHODS</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Creates a new SOMSDS object. Initializes it using database info, if available.</span>
+<span class="k">sub </span><span class="nf">new</span> <span class="p">{</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$class</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$root_path</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">%fields</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">root_path</span>   <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">db_folder</span>   <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">arc_folder</span>  <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">rec_folder</span>  <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">proj_folder</span> <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">rec_path</span>    <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">db_path</span>     <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">proj_path</span>   <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">rec_csv</span>     <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">subj_csv</span>    <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">files_csv</span>   <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span>
+    <span class="n">file</span>        <span class="o">=&gt;</span> <span class="p">{},</span>  <span class="c1"># Keys are full path names, values are File objects</span>
+    <span class="n">recording</span>   <span class="o">=&gt;</span> <span class="p">{},</span>  <span class="c1"># Keys are recordings ids, values are Recording objects</span>
+    <span class="p">);</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="p">{</span>        
+    <span class="n">_dbh</span>       <span class="o">=&gt;</span> <span class="nb">undef</span><span class="p">,</span> <span class="c1"># A CSV database object</span>
+    <span class="n">_permitted</span> <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">%fields</span><span class="p">,</span>
+    <span class="nv">%fields</span><span class="p">,</span>
+  <span class="p">};</span>
+<span class="p"></span>
+  <span class="c1"># Read object properties from the configuration file</span>
+  <span class="k">for</span> <span class="p">(</span><span class="sx">qw(root_path arc_folder db_folder rec_folder proj_folder rec_csv subj_csv files_csv)</span><span class="p">){</span>
+    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$_</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="nv">$_</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="c1"># For testing purposes</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$root_path</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">}</span> <span class="o">=</span> <span class="nv">$root_path</span><span class="p">;</span>   
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="c1"># Some convenient properties</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">rec_path</span><span class="p">}</span>   <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">rec_folder</span><span class="p">});</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">proj_path</span><span class="p">}</span>  <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">proj_folder</span><span class="p">});</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">db_path</span><span class="p">}</span>    <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">db_folder</span><span class="p">});</span>
+<span class="p"></span>
+  <span class="c1"># Make folder structure</span>
+  <span class="k">my</span> <span class="nv">$options</span> <span class="o">=</span> <span class="p">{</span><span class="n">mode</span> <span class="o">=&gt;</span> <span class="mo">0777</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">};</span>
+  <span class="k">foreach</span> <span class="p">(</span><span class="sx">qw(rec_folder proj_folder db_folder)</span><span class="p">){</span>   
+    <span class="k">my</span> <span class="nv">$new_dir</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> 
+                         <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$_</span><span class="p">});</span>
+    <span class="n">make_path</span> <span class="nv">$new_dir</span><span class="p">,</span> <span class="nv">$options</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="nb">bless</span> <span class="nv">$self</span><span class="p">,</span> <span class="nv">$class</span><span class="p">;</span>   
+<span class="p"></span>
+  <span class="c1"># Generate CSV tables, if they don&#39;t exist</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">_make_csv_tables</span><span class="p">();</span>
+<span class="p"></span>
+  <span class="c1"># Load CSV tables</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">_load</span><span class="p">();</span> 
+  <span class="k">return</span> <span class="nv">$self</span><span class="p">;</span>
+<span class="p">}</span>  
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Adds file extension to a set of files</span>
+<span class="k">sub </span><span class="nf">add_file_ext</span><span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$regex</span><span class="p">,</span> <span class="nv">$filext</span><span class="p">,</span> <span class="nv">$root</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+<span class="p"></span>
+<span class="p"></span>
+  <span class="c1"># Search for files that need to be described within the directory tree    </span>
+  <span class="n">find</span><span class="p">(</span><span class="k">sub </span><span class="p">{</span><span class="n">_rename</span><span class="p">(</span><span class="nv">$</span><span class="nn">File::Find::</span><span class="nv">name</span><span class="p">,</span> <span class="nv">$regex</span><span class="p">,</span> <span class="nv">$filext</span><span class="p">)},</span> <span class="nv">$root</span><span class="p">);</span> 
+  <span class="k">print</span> <span class="n">RED</span><span class="p">,</span> <span class="s">&quot;Do you want to rename the files above [y/n]? &quot;</span><span class="p">,</span> <span class="n">RESET</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$choice</span> <span class="o">=</span> <span class="s-Regexp">&lt;STDIN&gt;</span><span class="p">;</span>
+  <span class="nb">chomp</span> <span class="nv">$choice</span><span class="p">;</span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nv">$choice</span> <span class="ow">eq</span> <span class="s">&quot;y&quot;</span><span class="p">){</span>
+    <span class="nb">die</span> <span class="s">&quot;Nothing done!\n&quot;</span><span class="p">;</span>
+  <span class="p">}</span>  
+    <span class="n">finddepth</span><span class="p">(</span><span class="k">sub </span><span class="p">{</span><span class="n">_rename</span><span class="p">(</span><span class="nv">$</span><span class="nn">File::Find::</span><span class="nv">name</span><span class="p">,</span> <span class="nv">$regex</span><span class="p">,</span> <span class="nv">$filext</span><span class="p">,</span> <span class="mi">1</span><span class="p">)},</span> <span class="nv">$root</span><span class="p">);</span>         
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="k">sub </span><span class="nf">_rename</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$fname</span><span class="p">,</span> <span class="nv">$regex</span><span class="p">,</span> <span class="nv">$filext</span><span class="p">,</span> <span class="nv">$rename</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+  <span class="k">return</span> <span class="k">unless</span> <span class="p">(</span><span class="nv">$fname</span> <span class="o">=~</span> <span class="sr">m%$regex%</span><span class="p">);</span>
+  <span class="k">return</span> <span class="k">if</span> <span class="p">(</span><span class="nv">$fname</span> <span class="o">=~</span> <span class="sr">m%\.$filext$%</span><span class="p">);</span>
+  <span class="k">return</span> <span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$fname</span> <span class="o">||</span> <span class="o">-</span><span class="n">d</span> <span class="nv">$fname</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$new_name</span> <span class="o">=</span> <span class="nv">$fname</span><span class="o">.</span><span class="nv">$filext</span><span class="p">;</span>
+    <span class="k">print</span> <span class="s">&quot;$fname\n---&gt;$new_name\n\n&quot;</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$rename</span><span class="p">){</span>   
+    <span class="nb">rename</span><span class="p">(</span><span class="nv">$</span><span class="nn">File::Find::</span><span class="nv">name</span><span class="p">,</span> <span class="nv">$new_name</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span> 
+<span class="p"></span>
+<span class="c1">####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Generates table headers</span>
+<span class="k">sub </span><span class="nf">_header</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="nv">$csv_table</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$quotes</span>    <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;quotes&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$separator</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;separator&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">%header</span>    <span class="o">=</span> <span class="p">(</span> <span class="n">rec_csv</span>   <span class="o">=&gt;</span>  <span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="s">&quot;uname&quot;</span><span class="p">,</span> <span class="s">&quot;date&quot;</span><span class="p">,</span> <span class="s">&quot;archived&quot;</span><span class="p">,</span> <span class="s">&quot;settings&quot;</span><span class="p">],</span>                    
+                    <span class="n">subj_csv</span>  <span class="o">=&gt;</span>  <span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="s">&quot;uname&quot;</span><span class="p">,</span> <span class="s">&quot;date&quot;</span><span class="p">,</span> <span class="s">&quot;recording&quot;</span><span class="p">,</span> <span class="s">&quot;sex&quot;</span><span class="p">,</span>
+                                   <span class="s">&quot;age&quot;</span><span class="p">,</span> <span class="s">&quot;group&quot;</span><span class="p">,</span> <span class="s">&quot;meta&quot;</span><span class="p">],</span>
+                    <span class="n">files_csv</span> <span class="o">=&gt;</span>  <span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="s">&quot;uname&quot;</span><span class="p">,</span> <span class="s">&quot;date&quot;</span><span class="p">,</span> <span class="s">&quot;recording&quot;</span><span class="p">,</span> <span class="s">&quot;subject&quot;</span><span class="p">,</span>
+                                   <span class="s">&quot;sex&quot;</span><span class="p">,</span><span class="s">&quot;age&quot;</span><span class="p">,</span><span class="s">&quot;group&quot;</span><span class="p">,</span><span class="s">&quot;modality&quot;</span><span class="p">,</span><span class="s">&quot;device&quot;</span><span class="p">,</span>
+                                   <span class="s">&quot;technique&quot;</span><span class="p">,</span><span class="s">&quot;condition&quot;</span><span class="p">,</span><span class="s">&quot;session&quot;</span><span class="p">,</span><span class="s">&quot;block&quot;</span><span class="p">,</span><span class="s">&quot;meta&quot;</span><span class="p">],</span>                 
+                  <span class="p">);</span> 
+  <span class="k">my</span> <span class="nv">$header</span> <span class="o">=</span> <span class="nb">join</span> <span class="nv">$separator</span><span class="p">,</span> <span class="nb">map</span> <span class="p">{</span><span class="sx">qq/$quotes$_$quotes/</span><span class="p">}</span> <span class="nv">@</span><span class="p">{</span><span class="nv">$header</span><span class="p">{</span><span class="nv">$csv_table</span><span class="p">}};</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Generates a new recording configuration file</span>
+<span class="k">sub </span><span class="nf">new_rec_settings</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="nv">$options</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="p"></span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">filename</span><span class="p">}){</span>
+    <span class="n">croak</span> <span class="s">&quot;File &quot;</span><span class="o">.</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">filename</span><span class="p">}</span><span class="o">.</span><span class="s">&quot; already exists!\n&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$settings</span> <span class="o">=</span> <span class="nn">Config::</span><span class="n">IniFiles</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">();</span>
+  <span class="nv">$settings</span><span class="o">-&gt;</span><span class="n">SetFileName</span><span class="p">(</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">filename</span><span class="p">})</span> <span class="o">||</span> 
+    <span class="n">croak</span> <span class="s">&quot;I could not create file &quot;</span><span class="o">.</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">filename</span><span class="p">}</span><span class="o">.</span><span class="s">&quot;\n&quot;</span><span class="p">;</span>
+<span class="p"></span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recid</span><span class="p">}){</span>
+    <span class="n">croak</span> <span class="s">&quot;A recording ID must be provided&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="c1"># Recording secion</span>
+  <span class="k">my</span> <span class="nv">$rec</span> <span class="o">=</span> <span class="s">&quot;recording &quot;</span><span class="o">.</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recid</span><span class="p">};</span>
+  <span class="nv">$settings</span><span class="o">-&gt;</span><span class="n">AddSection</span><span class="p">(</span><span class="nv">$rec</span><span class="p">);</span>
+  <span class="k">for</span> <span class="p">(</span><span class="sx">qw(description responsible)</span><span class="p">){</span>
+    <span class="nv">$settings</span><span class="o">-&gt;</span><span class="n">newval</span><span class="p">(</span><span class="nv">$rec</span><span class="p">,</span> <span class="nv">$_</span><span class="p">,</span> <span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$_</span><span class="p">});</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="c1"># Modalities, conditions, subjects</span>
+  <span class="k">for</span> <span class="k">my</span> <span class="nv">$group</span> <span class="p">(</span><span class="sx">qw(modality condition subject technique device session</span>
+<span class="sx">                    block)</span><span class="p">){</span>
+    <span class="k">for</span> <span class="k">my</span> <span class="nv">$group_member</span> <span class="p">(</span><span class="nv">@</span><span class="p">{</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$group</span><span class="p">}}){</span>
+      <span class="nv">$settings</span><span class="o">-&gt;</span><span class="n">AddSection</span><span class="p">(</span><span class="nv">$group</span><span class="o">.</span><span class="s">&quot; &quot;</span><span class="o">.</span><span class="nv">$group_member</span><span class="p">);</span> 
+      <span class="k">for</span> <span class="k">my</span> <span class="nv">$prop_name</span> <span class="p">(</span><span class="nv">@</span><span class="p">{</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&quot;$group&quot;</span><span class="o">.</span><span class="s">&quot;_props&quot;</span><span class="p">}}){</span>
+        <span class="nv">$settings</span><span class="o">-&gt;</span><span class="n">newval</span><span class="p">(</span><span class="nv">$group</span><span class="o">.</span><span class="s">&quot; &quot;</span><span class="o">.</span><span class="nv">$group_member</span><span class="p">,</span> <span class="nv">$prop_name</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="nv">$settings</span><span class="o">-&gt;</span><span class="n">WriteConfig</span><span class="p">(</span><span class="nv">$options</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">filename</span><span class="p">});</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="c1">################################################################# PUBLIC METHODS</span>
+<span class="p"></span>
+<span class="c1"># Does the SOMSDS structure already contain a given recording?</span>
+<span class="k">sub </span><span class="nf">contains_rec</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$recid</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+  <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$recid</span><span class="p">}</span> <span class="nb">keys</span> <span class="nv">%</span><span class="p">{</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}};</span>  
+<span class="p">}</span>
+<span class="p"></span>
+<span class="c1"># Removes a recording</span>
+<span class="k">sub </span><span class="nf">remove_rec</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$rec</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nv">$rec</span> <span class="o">&amp;&amp;</span> <span class="nb">exists</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">})){</span>
+    <span class="n">croak</span> <span class="s">&quot;Invalid recording ID&quot;</span>  
+  <span class="p">}</span> 
+<span class="p"></span>
+  <span class="c1"># Unprotect the recording</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">unprotect</span><span class="p">(</span><span class="mo">0777</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$rec_table</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;rec_csv&#39;</span><span class="p">);</span>
+  <span class="nv">$rec_table</span> <span class="o">=~</span> <span class="sr">s/\..*$//</span><span class="p">;</span> 
+  <span class="k">my</span> <span class="nv">$query</span> <span class="o">=</span> <span class="s">&quot;DELETE FROM $rec_table WHERE id=&#39;$rec&#39;&quot;</span><span class="p">;</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$files_table</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;files_csv&#39;</span><span class="p">);</span>
+  <span class="nv">$files_table</span> <span class="o">=~</span> <span class="sr">s/\..*$//</span><span class="p">;</span>  
+  <span class="nv">$query</span> <span class="o">=</span> <span class="s">&quot;DELETE FROM $files_table WHERE recording=&#39;$rec&#39;&quot;</span><span class="p">;</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">print</span> <span class="s">&quot;Any reference to recording &#39;$rec&#39; has been removed\n&quot;</span><span class="p">;</span>
+  <span class="k">print</span> <span class="s">&quot;You will have to remove manually the recording directory tree\n&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Archives a recording</span>
+<span class="k">sub </span><span class="nf">archive_rec</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$rec</span><span class="p">,</span> <span class="nv">$filename</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nv">$rec</span><span class="p">){</span>
+    <span class="n">croak</span> <span class="s">&quot;A valid recording ID needs to be provided.&quot;</span>  
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$rec_table</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;rec_csv&#39;</span><span class="p">);</span>
+  <span class="nv">$rec_table</span> <span class="o">=~</span> <span class="sr">s/\..*$//</span><span class="p">;</span>  
+  <span class="k">my</span> <span class="nv">$sth</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM $rec_table WHERE id LIKE &#39;$rec&#39;&quot;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$row</span> <span class="o">=</span> <span class="nv">$sth</span><span class="o">-&gt;</span><span class="n">fetchrow_hashref</span> <span class="o">||</span> <span class="n">croak</span> <span class="s">&quot;Recording &#39;$rec&#39; does not exist&quot;</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nb">lc</span><span class="p">(</span><span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;archived&#39;</span><span class="p">})</span> <span class="ow">eq</span> <span class="s">&quot;yes&quot;</span><span class="p">){</span>
+    <span class="n">carp</span> 
+    <span class="s">&quot;Warning: Recording &#39;$rec&#39; is already marked as archived\n&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nv">$filename</span><span class="p">){</span>
+    <span class="nv">$filename</span> <span class="o">=</span> <span class="n">catfile</span><span class="p">(</span><span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;arc_folder&#39;</span><span class="p">),</span> 
+                        <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;rec_folder&#39;</span><span class="p">),</span> 
+                        <span class="nv">$rec</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="nv">$filename</span> <span class="o">=</span> <span class="nv">$filename</span><span class="o">.</span><span class="s">&#39;.tgz&#39;</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$dirname</span> <span class="o">=</span> <span class="n">dirname</span><span class="p">(</span><span class="nv">$filename</span><span class="p">);</span>
+  <span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$dirname</span><span class="p">){</span>
+    <span class="n">make_path</span> <span class="nv">$dirname</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="c1"># Compress the whole recording tree</span>
+  <span class="k">my</span> <span class="nv">@filelist</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$root</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">};</span>
+  <span class="k">print</span> <span class="s">&quot;Archiving $root into $filename...&quot;</span><span class="p">;</span><span class="vg">$|</span><span class="o">++</span><span class="p">;</span>
+  <span class="n">find</span><span class="p">(</span><span class="k">sub </span>
+<span class="k">    </span><span class="p">{</span>
+        <span class="nb">push</span> <span class="nv">@filelist</span><span class="p">,</span> <span class="nv">$</span><span class="nn">File::Find::</span><span class="nv">name</span><span class="p">;</span>
+    <span class="p">},</span>
+    <span class="nv">$root</span><span class="p">);</span>
+  <span class="nn">Archive::</span><span class="n">Tar</span><span class="o">-&gt;</span><span class="n">create_archive</span><span class="p">(</span><span class="nv">$filename</span><span class="p">,</span> <span class="n">COMPRESS_GZIP</span><span class="p">,</span> <span class="nv">@filelist</span><span class="p">);</span>
+  <span class="k">print</span> <span class="s">&quot;[done]\n&quot;</span><span class="p">;</span>
+  <span class="k">print</span> <span class="s">&quot;Remember to manually remove $root!\n&quot;</span><span class="p">;</span>
+  <span class="c1"># Mark the recording as archived in the recordings table  </span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="s">&quot;UPDATE $rec_table SET archived=&#39;YES&#39; WHERE id=&#39;$rec&#39;&quot;</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="c1"># Unprotect the recording</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">unprotect</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Unarchives a recording</span>
+<span class="k">sub </span><span class="nf">unarchive_rec</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$rec</span><span class="p">,</span> <span class="nv">$filename</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nv">$rec</span><span class="p">){</span>
+    <span class="n">croak</span> <span class="s">&quot;A valid recording ID needs to be provided.&quot;</span>  
+  <span class="p">}</span>
+  <span class="k">my</span> <span class="nv">$sth</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM recordings WHERE id LIKE &#39;$rec&#39;&quot;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$row</span> <span class="o">=</span> <span class="nv">$sth</span><span class="o">-&gt;</span><span class="n">fetchrow_hashref</span> <span class="o">||</span> <span class="n">croak</span> <span class="s">&quot;Recording &#39;$rec&#39; does not exist&quot;</span><span class="p">;</span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nb">lc</span><span class="p">(</span><span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;archived&#39;</span><span class="p">})</span> <span class="ow">eq</span> <span class="s">&quot;yes&quot;</span><span class="p">){</span>
+    <span class="n">carp</span> 
+    <span class="s">&quot;   Recording &#39;$rec&#39; is not marked as archived\n&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="k">unless</span> <span class="p">(</span><span class="nv">$filename</span><span class="p">){</span>
+    <span class="nv">$filename</span> <span class="o">=</span> <span class="n">catfile</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">arc_folder</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">rec_folder</span><span class="p">},</span> <span class="nv">$rec</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="nv">$filename</span> <span class="o">=</span> <span class="nv">$filename</span><span class="o">.</span><span class="s">&#39;.tgz&#39;</span><span class="p">;</span>
+<span class="p"></span>
+  <span class="c1"># Uncompress the file</span>
+  <span class="k">my</span> <span class="nv">$tar</span> <span class="o">=</span> <span class="nn">Archive::</span><span class="n">Tar</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$filename</span><span class="p">,</span> <span class="n">COMPRESS_GZIP</span><span class="p">);</span>
+  <span class="nv">$tar</span><span class="o">-&gt;</span><span class="n">setcwd</span><span class="p">(</span><span class="n">catdir</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">));</span>
+  <span class="nv">$tar</span><span class="o">-&gt;</span><span class="n">extract</span><span class="p">();</span>
+<span class="p"></span>
+  <span class="c1"># Mark as uncompressed in the recordings table</span>
+  <span class="k">my</span> <span class="nv">$rec_table</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span><span class="s">&#39;rec_csv&#39;</span><span class="p">);</span>
+  <span class="nv">$rec_table</span> <span class="o">=~</span> <span class="sr">s/^(.+)\..+$/$1/</span><span class="p">;</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="s">&quot;UPDATE $rec_table SET archived=&#39;NO&#39; WHERE id=&#39;$rec&#39;&quot;</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="c1"># Regenerate the links (can get broken in the archiving process)</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">update_file_list</span><span class="p">(</span><span class="nv">$rec</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="c1"># Protect the recording</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">protect</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="c1"># Refreshes the list of files attached to a recording</span>
+<span class="k">sub </span><span class="nf">update_file_list</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$rec</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>  
+  <span class="k">my</span> <span class="nv">$settings</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">settings</span><span class="p">();</span>
+  <span class="c1"># Does the recording exist? has it been archived?</span>
+  <span class="k">my</span> <span class="nv">$sth</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="s">&quot;SELECT * FROM recordings WHERE id LIKE &#39;$rec&#39;&quot;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$row</span> <span class="o">=</span> <span class="nv">$sth</span><span class="o">-&gt;</span><span class="n">fetchrow_hashref</span> <span class="o">||</span> <span class="n">croak</span> <span class="s">&quot;Recording &#39;$rec&#39; does not exist&quot;</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nb">lc</span><span class="p">(</span><span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;archived&#39;</span><span class="p">})</span> <span class="ow">eq</span> <span class="s">&quot;yes&quot;</span><span class="p">){</span>
+    <span class="n">croak</span> 
+    <span class="s">&quot; Recording &#39;$rec&#39; is marked as archived&quot;</span><span class="o">.</span>
+    <span class="s">&quot; Nothing was done!&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="c1"># What modalities, etc.. we should expect to find in the descriptor files?</span>
+  <span class="k">my</span> <span class="nv">%tests</span><span class="p">;</span>
+  <span class="k">for</span> <span class="k">my</span> <span class="nv">$field</span> <span class="p">(</span><span class="sx">qw(modality device technique condition subject session block)</span><span class="p">){</span>
+    <span class="k">my</span> <span class="nv">@list</span> <span class="o">=</span> <span class="nv">$settings</span><span class="o">-&gt;</span><span class="n">GroupMembers</span><span class="p">(</span><span class="nv">$field</span><span class="p">);</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="nv">@list</span><span class="p">){</span><span class="nv">$_</span> <span class="o">=~</span> <span class="sr">s/$field\s+//</span><span class="p">};</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">@list</span><span class="p">){</span>
+      <span class="nv">$tests</span><span class="p">{</span><span class="nv">$field</span><span class="p">}</span> <span class="o">=</span> <span class="o">\</span><span class="nv">@list</span><span class="p">;</span> 
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="c1"># File formats (file extensions) that allowed for these modalities</span>
+  <span class="k">my</span> <span class="nv">%formats</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">@valid_modalities</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">GroupMembers</span><span class="p">(</span><span class="s">&quot;modality&quot;</span><span class="p">);</span>
+  <span class="k">foreach</span> <span class="p">(</span><span class="nv">@valid_modalities</span><span class="p">)</span> <span class="p">{</span><span class="nv">$_</span> <span class="o">=~</span> <span class="sr">s/modality\s+//</span><span class="p">;}</span>
+<span class="p"></span>
+  <span class="k">for</span> <span class="k">my</span> <span class="nv">$modality</span> <span class="p">(</span><span class="nv">@</span><span class="p">{</span><span class="nv">$tests</span><span class="p">{</span><span class="s">&quot;modality&quot;</span><span class="p">}}){</span>
+    <span class="k">unless</span> <span class="p">(</span><span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$modality</span><span class="p">}</span> <span class="nv">@valid_modalities</span><span class="p">){</span>
+          <span class="n">croak</span> <span class="s">&quot;Modality &#39;&#39;$modality&#39;&#39; is not listed in $somsds_cfg_file\n&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">my</span> <span class="nv">$valid_ext</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&quot;modality $modality&quot;</span><span class="p">,</span> <span class="s">&#39;ext&#39;</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$valid_ext</span><span class="p">){</span>
+      <span class="nv">$formats</span><span class="p">{</span><span class="s">&quot;$modality&quot;</span><span class="p">}</span> <span class="o">=</span> <span class="p">[</span><span class="nb">split</span><span class="p">(</span><span class="sr">/\s+/</span><span class="p">,</span> <span class="nv">$valid_ext</span><span class="p">)];</span>        
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nv">$formats</span><span class="p">{</span><span class="s">&quot;$modality&quot;</span><span class="p">}</span> <span class="o">=</span> <span class="nb">undef</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p"></span>
+   <span class="c1"># remove obsolete links</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">clear_links</span><span class="p">();</span>
+<span class="p"></span>
+  <span class="c1"># Search for descriptor files within the recording tree, </span>
+  <span class="c1"># and add all the containing files to the files.csv table</span>
+  <span class="k">my</span> <span class="nv">$file_descr_regex</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;descriptor&#39;</span><span class="p">,</span> <span class="s">&#39;file_regexp&#39;</span><span class="p">);</span>
+  <span class="nv">$file_descr_regex</span> <span class="o">=~</span> <span class="sr">s/^&quot;(.+)&quot;$/$1/</span><span class="p">;</span>  
+  <span class="k">my</span> <span class="nv">$root</span> <span class="o">=</span>  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">};</span>
+  <span class="k">my</span> <span class="nv">%links</span><span class="p">;</span> <span class="c1"># to keep track of the duplicated links  </span>
+  <span class="n">find</span><span class="p">(</span><span class="k">sub </span>
+<span class="k">    </span><span class="p">{</span>
+        <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">_update_file</span><span class="p">(</span><span class="nv">$rec</span><span class="p">,</span> <span class="nv">$file_descr_regex</span><span class="p">,</span> <span class="o">\</span><span class="nv">%formats</span><span class="p">,</span> <span class="o">\</span><span class="nv">%tests</span><span class="p">,</span> <span class="o">\</span><span class="nv">%links</span><span class="p">);</span>
+    <span class="p">},</span>
+   <span class="nv">$root</span><span class="p">);</span>
+<span class="p"></span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="c1"># Performs SQL queries on the database</span>
+<span class="k">sub </span><span class="nf">sql</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$query</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span> 
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$query</span> <span class="o">=~</span> <span class="sr">m/^SELECT/</span><span class="p">){</span>   
+    <span class="k">my</span> <span class="nv">$sth</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">_dbh</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">prepare</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>
+    <span class="nv">$sth</span><span class="o">-&gt;</span><span class="n">execute</span><span class="p">();</span>
+    <span class="k">return</span> <span class="nv">$sth</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">_dbh</span><span class="p">}</span><span class="o">-&gt;</span><span class="k">do</span><span class="p">(</span><span class="nv">$query</span><span class="p">,</span> <span class="nv">@_</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="c1"># Inserts a recording into the database</span>
+<span class="k">sub </span><span class="nf">recording</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$value</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$type</span> <span class="o">=</span> <span class="nb">ref</span><span class="p">(</span><span class="nv">$self</span><span class="p">)</span> <span class="ow">or</span> <span class="n">croak</span> <span class="s">&quot;$self is not an object&quot;</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">unless</span> <span class="p">(</span><span class="nb">ref</span><span class="p">(</span><span class="nv">$value</span><span class="p">)</span> <span class="ow">eq</span> <span class="s">&quot;Recording&quot;</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">croak</span> <span class="s">&quot;$self is not an object of class Recording!&quot;</span>    
+    <span class="p">}</span>     
+    <span class="k">my</span> <span class="nv">$id</span> <span class="o">=</span> <span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">();</span>
+<span class="p"></span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}){</span>    
+      <span class="k">if</span> <span class="p">(</span><span class="nb">lc</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span><span class="o">-&gt;</span><span class="n">archived</span><span class="p">())</span> <span class="ow">eq</span> <span class="s">&quot;yes&quot;</span><span class="p">){</span>
+        <span class="nb">die</span> <span class="s">&quot; Recording &#39;$id&#39; is marked as archived. \n&quot;</span><span class="o">.</span>
+            <span class="s">&quot; If you want to modify the recording, unarchive it first using:\n&quot;</span><span class="o">.</span>
+            <span class="s">&quot; &#39;somsds_unarchive_rec $id&#39;\n&quot;</span><span class="p">;</span>
+      <span class="p">}</span>   
+      <span class="nb">warn</span> <span class="s">&quot;Recording &#39;$id&#39; already exists!\n&quot;</span><span class="p">;</span>
+      <span class="k">print</span> <span class="n">RED</span><span class="p">,</span> <span class="s">&quot;Do you want to modify the existing recording [y/n]? &quot;</span><span class="p">,</span> <span class="n">RESET</span><span class="p">;</span>
+        <span class="k">my</span> <span class="nv">$choice</span> <span class="o">=</span> <span class="s-Regexp">&lt;STDIN&gt;</span><span class="p">;</span>
+        <span class="nb">chomp</span> <span class="nv">$choice</span><span class="p">;</span>
+        <span class="k">unless</span> <span class="p">(</span><span class="nv">$choice</span> <span class="ow">eq</span> <span class="s">&quot;y&quot;</span><span class="p">){</span>
+             <span class="nb">die</span> <span class="s">&quot;Nothing done!\n&quot;</span><span class="p">;</span>
+        <span class="p">}</span>          
+      <span class="k">my</span> <span class="nv">$rec_id</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">();</span>
+      <span class="c1"># Remove all recording subjects from the database</span>
+      <span class="k">my</span> <span class="nv">$subj_table</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;subj_csv&#39;</span><span class="p">);</span>
+      <span class="nv">$subj_table</span> <span class="o">=~</span> <span class="sr">s/\..*$//</span><span class="p">;</span>
+      <span class="k">my</span> <span class="nv">$query</span> <span class="o">=</span> <span class="s">&quot;DELETE FROM $subj_table WHERE recording=&#39;$rec_id&#39;&quot;</span><span class="p">;</span>
+      <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">_dbh</span><span class="p">}</span><span class="o">-&gt;</span><span class="k">do</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>             
+    <span class="p">}</span>      
+<span class="p"></span>
+        <span class="c1"># Modify the root folder of the recording</span>
+        <span class="nv">$value</span><span class="o">-&gt;</span><span class="n">root_path</span><span class="p">(</span><span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">rec_path</span><span class="p">},</span> <span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()));</span>
+<span class="p"></span>
+        <span class="c1"># Insert the recording into the SOMSDS object</span>
+        <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span> <span class="o">=</span> <span class="nv">$value</span><span class="p">;</span>
+<span class="p"></span>
+        <span class="c1"># Generate the directory tree</span>
+        <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span><span class="o">-&gt;</span><span class="n">make_folders</span><span class="p">();</span>
+<span class="p"></span>
+        <span class="c1"># Copy the settings file and link the recording to it</span>
+        <span class="k">my</span> <span class="nv">$fname</span> <span class="o">=</span> <span class="n">basename</span><span class="p">(</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">settings_file</span><span class="p">});</span>
+        <span class="k">my</span> <span class="nv">$new_file</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">root_path</span><span class="p">(),</span> <span class="s">&#39;doc&#39;</span><span class="p">,</span> <span class="nv">$fname</span><span class="p">);</span>
+      <span class="n">copy</span><span class="p">(</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">settings_file</span><span class="p">},</span> <span class="nv">$new_file</span><span class="p">);</span>
+        <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span><span class="o">-&gt;</span><span class="n">settings_file</span><span class="p">(</span><span class="nv">$new_file</span><span class="p">);</span>
+<span class="p"></span>
+        <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span><span class="o">-&gt;</span><span class="n">protect</span><span class="p">();</span>
+<span class="p"></span>
+    <span class="c1"># Insert the recording to the SOMSDS object and update the database</span>
+    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span> <span class="o">=</span> <span class="nv">$value</span><span class="p">;</span>  
+    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span><span class="o">-&gt;</span><span class="n">save</span><span class="p">(</span><span class="nv">$self</span><span class="p">);</span> 
+<span class="p"></span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">};</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="c1">################################################################ PRIVATE METHODS</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Helper function for update_file_list</span>
+<span class="k">sub </span><span class="nf">_update_file</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$rec</span><span class="p">,</span> <span class="nv">$file_descr_regex</span><span class="p">,</span> <span class="nv">$formats</span><span class="p">,</span> <span class="nv">$tests</span><span class="p">,</span> <span class="nv">$links</span><span class="p">)</span> <span class="o">=</span> 
+    <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">return</span> <span class="k">unless</span> <span class="p">(</span><span class="nv">$_</span> <span class="o">=~</span><span class="sr"> /$file_descr_regex/</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$fh</span> <span class="o">=</span> <span class="nn">Tie::Handle::</span><span class="n">CSV</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="n">csv_parser</span>     <span class="o">=&gt;</span> <span class="nn">Text::</span><span class="n">CSV_XS</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(),</span>
+                                   <span class="n">file</span>         <span class="o">=&gt;</span> <span class="nv">$</span><span class="nn">File::Find::</span><span class="nv">name</span><span class="p">,</span>
+                                   <span class="n">header</span>       <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span>
+                                   <span class="n">key_case</span>     <span class="o">=&gt;</span> <span class="s">&#39;lower&#39;</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="c1"># Read the descriptor file line by line</span>
+  <span class="k">my</span> <span class="nv">$counter</span>       <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$link_counter</span>  <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$inserted</span><span class="p">;</span>
+<span class="p"></span>
+  <span class="n">CSVLINE:</span> <span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$line</span> <span class="o">=</span> <span class="s-Regexp">&lt;$fh&gt;</span><span class="p">){</span>
+    <span class="nv">$counter</span><span class="o">++</span><span class="p">;</span>
+    <span class="nv">$inserted</span> <span class="o">=</span> <span class="nb">undef</span><span class="p">;</span>
+    <span class="k">my</span> <span class="nv">$listed_filename</span><span class="p">;</span>
+    <span class="c1"># Check that the file name is valid and that the file actually exists</span>
+    <span class="k">unless</span> <span class="p">(</span><span class="nv">$listed_filename</span> <span class="o">=</span> <span class="n">abs_path</span> <span class="nv">$line</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">}){</span>
+      <span class="k">print</span> <span class="n">RED</span><span class="p">,</span> 
+        <span class="s">&quot;Warning: Invalid filename in line $counter of descriptor file:</span>
+<span class="s">                  $File::Find::name</span>
+<span class="s">        &quot;</span><span class="p">,</span> <span class="n">RESET</span><span class="p">,</span> <span class="s">&quot;\n\n&quot;</span><span class="p">;</span>
+            <span class="k">next</span> <span class="n">CSVLINE</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p"></span>
+    <span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$listed_filename</span><span class="p">){</span>
+      <span class="k">print</span> <span class="n">RED</span><span class="p">,</span>  
+        <span class="s">&quot;Warning: I could not find file $listed_filename</span>
+<span class="s">                  File is listed in line $counter of descriptor file:</span>
+<span class="s">                  $File::Find::name</span>
+<span class="s">        &quot;</span><span class="p">,</span> <span class="n">RESET</span><span class="p">,</span><span class="s">&quot;\n\n&quot;</span><span class="p">;</span>           
+            <span class="k">next</span> <span class="n">CSVLINE</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p"></span>
+    <span class="c1"># Make the file name relative to the recording root</span>
+    <span class="k">my</span> <span class="nv">$abs_listed_filename</span> <span class="o">=</span> <span class="nv">$listed_filename</span><span class="p">;</span>
+    <span class="k">my</span> <span class="nv">$root</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">root_path</span><span class="p">();</span>
+    <span class="nv">$listed_filename</span> <span class="o">=~</span> <span class="n">s</span><span class="o">&amp;</span><span class="nv">$root</span><span class="p">(</span><span class="o">\\|/</span><span class="p">)</span><span class="o">&amp;&amp;</span><span class="p">;</span>
+<span class="p"></span>
+    <span class="c1"># Check wether the file description looks OK</span>
+    <span class="k">for</span> <span class="k">my</span> <span class="nv">$field</span> <span class="p">(</span><span class="nb">keys</span> <span class="nv">%</span><span class="p">{</span><span class="nv">$tests</span><span class="p">}){</span>
+      <span class="k">next</span> <span class="k">unless</span> <span class="nv">$line</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$field</span><span class="p">};</span>
+      <span class="k">unless</span> <span class="p">(</span><span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$line</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$field</span><span class="p">}}</span> <span class="nv">@</span><span class="p">{</span><span class="nv">$tests</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$field</span><span class="p">}}){</span>
+        <span class="n">croak</span> 
+        <span class="s">&quot;Error: Invalid $field &#39;$line-&gt;{$field}&#39; of file:\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;$listed_filename\n&quot;</span><span class="o">.</span> 
+        <span class="s">&quot;Valid values of field $field for this recording are:\n &quot;</span><span class="o">.</span>
+        <span class="nb">join</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">,</span> <span class="nv">@</span><span class="p">{</span><span class="nv">$tests</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$field</span><span class="p">}})</span><span class="o">.</span><span class="s">&quot;\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;Did you forget to update the recording settings file?\n\n&quot;</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p"></span>
+    <span class="c1"># Check that the file has the right extension</span>
+        <span class="nv">$listed_filename</span> <span class="o">=~</span><span class="sr"> /(.[^.]*)$/</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nv">$formats</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&quot;$line-&gt;{modality}&quot;</span><span class="p">}</span> <span class="o">&amp;&amp;</span>
+        <span class="n">none</span> <span class="p">{</span><span class="nv">$1</span> <span class="ow">eq</span> <span class="nv">$_</span><span class="p">}</span> <span class="nv">@</span><span class="p">{</span><span class="nv">$formats</span><span class="o">-&gt;</span><span class="p">{</span><span class="s">&quot;$line-&gt;{modality}&quot;</span><span class="p">}}){</span>
+            <span class="k">print</span> <span class="n">RED</span><span class="p">,</span><span class="s">&quot;Warning: Invalid extension $1 for modality $line-&gt;{modality}\n&quot;</span><span class="o">.</span>
+                        <span class="s">&quot;         Allowed extensions are: @{$formats-&gt;{$line-&gt;{modality}}}\n&quot;</span><span class="p">,</span>
+                <span class="s">&quot;         Ignoring $listed_filename&quot;</span><span class="p">,</span> <span class="n">RESET</span><span class="p">,</span><span class="s">&quot;\n\n&quot;</span><span class="p">;</span>               
+            <span class="k">next</span> <span class="n">CSVLINE</span><span class="p">;</span>  
+        <span class="p">}</span> 
+<span class="p"></span>
+    <span class="k">my</span> <span class="nv">$db_rel_listed_filename</span> <span class="o">=</span> 
+      <span class="nn">File::</span><span class="n">Spec</span><span class="o">-&gt;</span><span class="n">abs2rel</span><span class="p">(</span>  <span class="nv">$abs_listed_filename</span><span class="p">,</span> 
+                            <span class="n">catdir</span><span class="p">(</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span>                                     
+                                    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">db_folder</span><span class="p">}));</span>
+<span class="p"></span>
+    <span class="k">my</span> <span class="nv">$file</span><span class="o">=</span><span class="n">File</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$db_rel_listed_filename</span><span class="p">,</span> <span class="nv">$line</span><span class="p">);</span>
+    <span class="nv">$file</span><span class="o">-&gt;</span><span class="n">recording</span><span class="p">(</span><span class="nv">$rec</span><span class="p">);</span>    
+<span class="p"></span>
+    <span class="c1"># Create a symbolic link to this file (relative to the location of raw)</span>
+    <span class="k">my</span> <span class="nv">$path_pattern</span>  <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;Recording&#39;</span><span class="p">,</span> <span class="s">&#39;path_pattern&#39;</span><span class="p">);</span>
+    <span class="k">my</span> <span class="nv">$link_name</span>     <span class="o">=</span> <span class="nv">$file</span><span class="o">-&gt;</span><span class="n">link_name</span><span class="p">();</span>
+    <span class="k">my</span> <span class="nv">$file_name</span>     <span class="o">=</span> <span class="nv">$</span><span class="nn">File::Find::</span><span class="nv">name</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">exists</span> <span class="nv">$links</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$link_name</span><span class="p">}){</span>
+      <span class="n">carp</span> 
+        <span class="n">RED</span><span class="p">,</span> <span class="s">&quot;Line $links-&gt;{$link_name}-&gt;{lineno} of descriptor file:\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;$links-&gt;{$link_name}-&gt;{file}\n&quot;</span><span class="o">.</span>
+                <span class="s">&quot;which describes:\n&quot;</span><span class="o">.</span>
+                <span class="s">&quot;$links-&gt;{$link_name}-&gt;{item}\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;seems to duplicate line $counter of file:\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;$file_name\n&quot;</span><span class="o">.</span>
+                <span class="s">&quot;which describes file:\n&quot;</span><span class="o">.</span>
+                <span class="s">&quot;$db_rel_listed_filename\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;Both lines generate the link:\n $link_name\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;It is recommended to remove or edit one of those two lines and run &quot;</span><span class="o">.</span>
+        <span class="s">&quot;&#39;somsds_rec_update $rec&#39;\n&quot;</span><span class="o">.</span>
+        <span class="s">&quot;Ignoring $listed_filename&quot;</span><span class="p">,</span> <span class="n">RESET</span><span class="p">,</span> <span class="s">&quot;\n&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nv">$links</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$link_name</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="n">file</span>    <span class="o">=&gt;</span> <span class="nv">$file_name</span><span class="p">,</span>
+                                                        <span class="n">item</span>         <span class="o">=&gt;</span> <span class="nv">$db_rel_listed_filename</span><span class="p">,</span>
+                            <span class="n">lineno</span>  <span class="o">=&gt;</span> <span class="nv">$counter</span><span class="p">};</span>
+<span class="p"></span>
+    <span class="nv">$link_name</span> <span class="o">=~</span> <span class="n">m</span><span class="o">|^</span><span class="p">(</span><span class="o">.+</span><span class="p">)</span><span class="sr">/[^/</span><span class="p">]</span><span class="o">+</span><span class="vg">$|</span><span class="p">;</span>   
+    <span class="k">if</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$link_name</span><span class="p">){</span>
+      <span class="nb">unlink</span> <span class="nv">$link_name</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nb">symlink</span> <span class="nv">$abs_listed_filename</span><span class="p">,</span> <span class="nv">$link_name</span><span class="p">;</span>
+    <span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$link_name</span><span class="p">){</span>
+      <span class="n">croak</span> <span class="s">&quot;I could not create the link $link_name\n&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">print</span> <span class="s">&quot;$link_name \n--&gt;&gt; $abs_listed_filename\n\n&quot;</span><span class="p">;</span> 
+<span class="p"></span>
+    <span class="c1"># Add the file to the corresponding recording</span>
+    <span class="k">my</span> <span class="nv">$file_obj</span> <span class="o">=</span> <span class="n">File</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$abs_listed_filename</span><span class="p">,</span> <span class="nv">$line</span><span class="p">);</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="sx">qw(sex age group)</span><span class="p">){</span>
+      <span class="k">my</span> <span class="nv">$field_value</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">settings</span><span class="p">}</span>
+                        <span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&quot;subject $line-&gt;{subject}&quot;</span><span class="p">,</span> <span class="nv">$_</span><span class="p">);</span>
+      <span class="k">my</span> <span class="nv">$cmd</span> <span class="o">=</span> <span class="s">&#39;$file_obj-&gt;&#39;</span><span class="o">.</span><span class="nv">$_</span><span class="o">.</span><span class="s">&#39;($field_value)&#39;</span><span class="p">;</span>
+      <span class="nb">eval</span><span class="p">(</span><span class="nv">$cmd</span><span class="p">);</span>
+    <span class="p">}</span>    
+    <span class="nv">$file_obj</span><span class="o">-&gt;</span><span class="n">recording</span><span class="p">(</span><span class="nv">$rec</span><span class="p">);</span>
+    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">file</span><span class="p">(</span><span class="nv">$file_obj</span><span class="p">);</span>
+    <span class="nv">$link_counter</span><span class="o">++</span><span class="p">;</span>    
+<span class="p"></span>
+  <span class="p">}</span> <span class="c1"># end of CSV line iterator</span>
+  <span class="k">print</span> <span class="s">&quot;Created $link_counter symbolic links\n&quot;</span><span class="p">;</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">save</span><span class="p">(</span><span class="nv">$self</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Loads info about the data structure from the database</span>
+<span class="k">sub </span><span class="nf">_load</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>  
+  <span class="k">my</span> <span class="nv">$separator</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;separator&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$quotes</span>    <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;quotes&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$db_folder</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">db_folder</span><span class="p">});</span>
+  <span class="k">my</span> <span class="nv">$csv_tables</span><span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">_db_tables</span><span class="p">();</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">_dbh</span><span class="p">}</span> <span class="o">=</span> <span class="n">DBI</span><span class="o">-&gt;</span><span class="nb">connect</span><span class="p">(</span><span class="s">&quot;dbi:CSV:&quot;</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="nb">undef</span><span class="p">,</span> <span class="p">{</span>
+        <span class="n">f_dir</span>                <span class="o">=&gt;</span> <span class="nv">$db_folder</span><span class="p">,</span> 
+        <span class="n">f_ext</span>                <span class="o">=&gt;</span> <span class="s">&quot;.csv/r&quot;</span><span class="p">,</span>
+        <span class="n">csv_eol</span>          <span class="o">=&gt;</span> <span class="s">&quot;\n&quot;</span><span class="p">,</span> 
+        <span class="n">csv_sep_char</span>       <span class="o">=&gt;</span> <span class="s">&quot;$separator&quot;</span><span class="p">,</span> 
+        <span class="n">csv_quote_char</span>   <span class="o">=&gt;</span> <span class="s">&quot;$quotes&quot;</span><span class="p">,</span> 
+        <span class="n">csv_tables</span>         <span class="o">=&gt;</span> <span class="nv">$csv_tables</span><span class="p">,</span>
+        <span class="n">RaiseError</span>         <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">PrintError</span>         <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">})</span> <span class="ow">or</span> <span class="n">croak</span> <span class="nv">$</span><span class="nn">DBI::</span><span class="nv">errstr</span><span class="p">;</span>
+  <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">_load_rec</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Generates the directory trees for a project</span>
+<span class="k">sub </span><span class="nf">make_proj_folders</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$self</span><span class="p">,</span> <span class="nv">$proj_id</span><span class="p">,</span> <span class="nv">$users</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">@users</span> <span class="o">=</span> <span class="nv">@$users</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$proj_folder</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">proj_folder</span><span class="p">},</span> <span class="nv">$proj_id</span><span class="p">);</span>
+    <span class="k">my</span> <span class="nv">$proj_group</span> <span class="o">=</span> <span class="nv">$proj_id</span><span class="p">;</span>
+  <span class="nv">$proj_group</span> <span class="o">=~</span> <span class="sr">s/[-]//g</span><span class="p">;</span>   
+<span class="p"></span>
+    <span class="k">my</span> <span class="nv">$cmd</span><span class="p">;</span>
+  <span class="c1"># Create a new group</span>
+  <span class="k">unless</span> <span class="p">(</span><span class="vg">$^O</span> <span class="ow">eq</span> <span class="s">&#39;darwin&#39;</span><span class="p">){</span>
+    <span class="nv">$cmd</span> <span class="o">=</span> <span class="s">&#39;/usr/sbin/groupadd &#39;</span><span class="o">.</span><span class="nv">$proj_group</span><span class="p">;</span>
+    <span class="k">print</span> <span class="nv">$cmd</span><span class="p">,</span><span class="s">&quot;\n&quot;</span><span class="p">;</span>
+    <span class="sb">`$cmd`</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+  <span class="c1"># Add the project members to the group</span>
+  <span class="k">unless</span> <span class="p">(</span><span class="vg">$^O</span> <span class="ow">eq</span> <span class="s">&#39;darwin&#39;</span><span class="p">){</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="nv">@users</span><span class="p">){</span>
+      <span class="nv">$cmd</span> <span class="o">=</span> <span class="s">&quot;/usr/sbin/usermod -a -G $proj_group $_&quot;</span><span class="p">;</span>
+      <span class="k">print</span> <span class="nv">$cmd</span><span class="p">,</span><span class="s">&quot;\n&quot;</span><span class="p">;</span>
+      <span class="sb">`$cmd`</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$path</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;project&#39;</span><span class="p">,</span> <span class="s">&#39;folders&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">@paths</span> <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="s">&quot;\n&quot;</span><span class="p">,</span> <span class="nv">$path</span><span class="p">);</span>
+  <span class="k">foreach</span> <span class="p">(</span><span class="nv">@paths</span><span class="p">){</span>
+    <span class="k">my</span> <span class="nv">$options</span>   <span class="o">=</span> <span class="p">{</span><span class="n">mode</span> <span class="o">=&gt;</span> <span class="mo">0775</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">};</span>
+    <span class="k">my</span> <span class="nv">$new_path</span>  <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$proj_folder</span><span class="p">,</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/\s+/</span><span class="p">,</span> <span class="nv">$_</span><span class="p">));</span>    
+    <span class="n">make_path</span> <span class="nv">$new_path</span><span class="p">,</span> <span class="nv">$options</span><span class="p">;</span>            
+  <span class="p">}</span>  
+  <span class="c1"># change the ownwerships</span>
+  <span class="k">if</span> <span class="p">(</span><span class="vg">$^O</span> <span class="ow">eq</span> <span class="s">&#39;darwin&#39;</span><span class="p">){</span>
+    <span class="nv">$cmd</span> <span class="o">=</span> <span class="s">&quot;chown -R $users[0] $proj_folder&quot;</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nv">$cmd</span> <span class="o">=</span> <span class="s">&quot;chown -R $users[0]:$proj_group $proj_folder&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">print</span> <span class="nv">$cmd</span><span class="p">,</span><span class="s">&quot;\n&quot;</span><span class="p">;</span>
+  <span class="sb">`$cmd`</span><span class="p">;</span>
+  <span class="nv">$cmd</span> <span class="o">=</span> <span class="s">&quot;chmod -R 0775 $proj_folder\n&quot;</span><span class="p">;</span>
+  <span class="k">print</span> <span class="nv">$cmd</span><span class="p">;</span> 
+  <span class="sb">`$cmd`</span><span class="p">;</span>       
+<span class="p">}</span>  
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="c1"># Lists database tables (to be used by the DBI constructor)</span>
+<span class="k">sub </span><span class="nf">_db_tables</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$db_folder</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">db_folder</span><span class="p">});</span>
+    <span class="nb">opendir</span><span class="p">(</span><span class="n">DBFOLDER_H</span><span class="p">,</span> <span class="nv">$db_folder</span><span class="p">);</span>
+    <span class="k">my</span> <span class="nv">@file</span> <span class="o">=</span> <span class="nb">grep</span><span class="p">(</span><span class="sr">/\.csv$/</span><span class="p">,</span> <span class="nb">readdir</span><span class="p">(</span><span class="n">DBFOLDER_H</span><span class="p">));</span>
+    <span class="nb">closedir</span><span class="p">(</span><span class="n">DBFOLDER_H</span><span class="p">);</span>
+    <span class="k">my</span> <span class="nv">%csv_tables</span><span class="p">;</span>
+    <span class="k">foreach</span> <span class="p">(</span><span class="nv">@file</span><span class="p">){</span>
+      <span class="sr">s/\.csv//</span><span class="p">;</span>
+        <span class="nv">$csv_tables</span><span class="p">{</span><span class="nv">$_</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="n">file</span> <span class="o">=&gt;</span> <span class="nv">$_</span><span class="o">.</span><span class="s">&quot;.csv&quot;</span><span class="p">};</span>
+    <span class="p">}</span>
+  <span class="o">\</span><span class="nv">%csv_tables</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Generates empty database tables with proper headers</span>
+<span class="k">sub </span><span class="nf">_make_csv_tables</span><span class="p">{</span>
+  <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+  <span class="k">foreach</span> <span class="p">(</span><span class="sx">qw(rec_csv files_csv subj_csv)</span><span class="p">){</span> 
+    <span class="k">my</span> <span class="nv">$csv_file</span> <span class="o">=</span> <span class="n">catfile</span><span class="p">(</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">db_path</span><span class="p">},</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$_</span><span class="p">});</span>  
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$csv_file</span><span class="p">)){</span> 
+      <span class="nb">open</span> <span class="p">(</span><span class="n">CSVFILE</span><span class="p">,</span> <span class="s">&#39;&gt;&#39;</span><span class="o">.</span><span class="nv">$csv_file</span><span class="p">);</span>
+      <span class="k">print</span> <span class="n">CSVFILE</span> <span class="n">_header</span><span class="p">(</span><span class="nv">$_</span><span class="p">),</span><span class="s">&quot;\n&quot;</span><span class="p">;</span>
+      <span class="nb">close</span><span class="p">(</span><span class="n">CSVFILE</span><span class="p">);</span>
+    <span class="p">}</span>
+      <span class="nb">chmod</span> <span class="p">(</span><span class="mo">0777</span><span class="p">,</span> <span class="nv">$csv_file</span><span class="p">);</span>
+  <span class="p">}</span>  
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Loads recordings&#39; info from the database</span>
+<span class="k">sub </span><span class="nf">_load_rec</span> <span class="p">{</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$self</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$table</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;rec_csv&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$rec_folder</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;rec_folder&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$db_folder</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;db_folder&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$root_path</span> <span class="o">=</span> <span class="nv">$somsds_cfg</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;somsds&#39;</span><span class="p">,</span> <span class="s">&#39;root_path&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$base_path</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$root_path</span><span class="p">,</span> <span class="nv">$db_folder</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$table_path</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$base_path</span><span class="p">,</span> <span class="nv">$table</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">return</span> <span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$table_path</span><span class="p">);</span>
+  <span class="nv">$table</span> <span class="o">=~</span> <span class="sr">s/\..*$//</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$query</span> <span class="o">=</span> <span class="s">&quot;SELECT * FROM $table&quot;</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$sth</span> <span class="o">=</span> <span class="nv">$self</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>
+  <span class="c1"># Load each recording (a row of the recordings.csv table)</span>
+  <span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$row</span> <span class="o">=</span> <span class="nv">$sth</span><span class="o">-&gt;</span><span class="n">fetchrow_hashref</span><span class="p">){</span>
+<span class="p"></span>
+    <span class="k">my</span> <span class="nv">$settings_file</span> <span class="o">=</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">settings</span><span class="p">};</span>
+    <span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$settings_file</span><span class="p">){</span>
+    <span class="c1"># Fix the mount mount</span>
+      <span class="k">my</span> <span class="nv">$rec_id</span> <span class="o">=</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">};</span>
+      <span class="nv">$settings_file</span> <span class="o">=~</span> <span class="sr">s/^.+$rec_folder.$rec_id.(.+)/$1/</span><span class="p">;</span>
+      <span class="nv">$settings_file</span> <span class="o">=</span> <span class="n">catfile</span><span class="p">(</span><span class="nv">$root_path</span><span class="p">,</span> <span class="nv">$rec_folder</span><span class="p">,</span> <span class="nv">$rec_id</span><span class="p">,</span> <span class="nv">$settings_file</span><span class="p">);</span>        
+    <span class="p">}</span> 
+    <span class="k">my</span> <span class="nv">$rec</span> <span class="o">=</span> <span class="n">Recording</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$settings_file</span><span class="p">);</span>
+    <span class="nv">$rec</span><span class="o">-&gt;</span><span class="n">archived</span><span class="p">(</span><span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">archived</span><span class="p">});</span>
+<span class="p"></span>
+    <span class="nv">$self</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">()}</span><span class="o">=</span><span class="nv">$rec</span><span class="p">;</span>
+    <span class="c1">#IMPORTANT: Note that the files of the a given recording are not loaded!!!</span>
+  <span class="p">}</span>
+<span class="p"></span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1">#####################</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="k">sub </span><span class="nf">DESTROY</span> <span class="p">{</span>
+<span class="p"></span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="mi">1</span><span class="p">;</span>
+<span class="cp">__END__</span>
+<span class="p"></span>
+<span class="cp">=head1 SOMSDS</span>
+<span class="p"></span>
+<span class="cp">SOMSDS - Perl module for maintaining somerenserver&#39;s standard data structure</span>
+<span class="p"></span>
+<span class="cp">=head1 SYNOPSIS</span>
+<span class="cp">  </span>
+<span class="cp">  # #################################</span>
+<span class="cp">  # Direct use from the command line:</span>
+<span class="cp">  # #################################</span>
+<span class="p"></span>
+<span class="cp">  # Creating a new SOMSDS structure</span>
+<span class="cp">  somsds_new </span>
+<span class="p"></span>
+<span class="cp">  # Inserting/removing a recording from the database</span>
+<span class="cp">  somsds_new_rec myrec </span>
+<span class="cp">  somsds_remove_rec myrec </span>
+<span class="p"></span>
+<span class="cp">  # Creating descriptor files for a directory tree containing data files</span>
+<span class="cp">  somsds_descriptor mydir </span>
+<span class="p"></span>
+<span class="cp">  # Importing a directory tree that contains data files</span>
+<span class="cp">  somsds_import_rec myrec mydir</span>
+<span class="p"></span>
+<span class="cp">  # Refreshing the database tables of a given recording</span>
+<span class="cp">  somsds_update_rec myrec</span>
+<span class="p"></span>
+<span class="cp">  # Pruning empty directories from a recording</span>
+<span class="cp">  somsds_prune_rec myrec</span>
+<span class="p"></span>
+<span class="cp">  # Archiving/Unarchiving a recording</span>
+<span class="cp">  somsds_archive myrec</span>
+<span class="cp">  somsds_unarchive myrec</span>
+<span class="p"></span>
+<span class="cp">  # Protecing/Unprotecting a recording</span>
+<span class="cp">  somsds_protect myrec</span>
+<span class="cp">  somsds_unprotect myrec</span>
+<span class="p"></span>
+<span class="cp">  # Performing a database query</span>
+<span class="cp">  somsds_query myrec &quot;SELECT * FROM files WHERE modality=&#39;smri&#39;&quot;</span>
+<span class="p"></span>
+<span class="cp">  # #################################</span>
+<span class="cp">  # Use as a module</span>
+<span class="cp">  # #################################  </span>
+<span class="cp">  </span>
+<span class="cp">  Use SOMSDS;</span>
+<span class="cp">  </span>
+<span class="cp">  # Initialize</span>
+<span class="cp">  $ds = SOMSDS-&gt;new();</span>
+<span class="cp">  </span>
+<span class="cp">  # Add a recording to the system</span>
+<span class="cp">  $rec = SOMSDS::Recording-&gt;new(&#39;myrec&#39;);  </span>
+<span class="cp">  $rec-&gt;subject(Subject-&gt;new(&#39;0001&#39;,&#39;0002&#39;);</span>
+<span class="cp">  $rec-&gt;modality(Modality-&gt;new(&#39;eeg&#39;,&#39;meg&#39;,&#39;smri&#39;));</span>
+<span class="cp">  $rec-&gt;condition(Condition-&gt;new(&#39;rs&#39;,&#39;task&#39;));</span>
+<span class="cp">  $ds-&gt;recording($rec);  </span>
+<span class="p"></span>
+<span class="cp">  # Remove a recording</span>
+<span class="cp">  $ds-&gt;remove_recording(&#39;myrec&#39;);</span>
+<span class="p"></span>
+<span class="cp">  # Generate descriptors</span>
+<span class="cp">  SOMSDS::descriptors(&#39;/directory/with/data/files&#39;);</span>
+<span class="p"></span>
+<span class="cp">  # Import a directory with data files into a recording</span>
+<span class="cp">  $ds-&gt;import_dir(&#39;myrec&#39;, &#39;/dir/with/data/&#39;);</span>
+<span class="p"></span>
+<span class="cp">  # Archive/unarchive a recording</span>
+<span class="cp">  $ds-&gt;archive_rec(&#39;myrec&#39;);</span>
+<span class="cp">  $ds-&gt;unarchive_rec(&#39;myrec&#39;);</span>
+<span class="p"></span>
+<span class="cp">  # Protecting/unprotecting a recording</span>
+<span class="cp">  $ds-&gt;protect_rec(&#39;myrec&#39;);</span>
+<span class="cp">  $ds-&gt;unprotect_rec(&#39;myrec&#39;);</span>
+<span class="p"></span>
+<span class="cp">  # Performing a SQL query</span>
+<span class="cp">  $ds-&gt;sql(&quot;SELECT * FROM files WHERE (sex=&#39;M&#39;) AND (recording=&#39;myrec&#39;)&quot;)</span>
+<span class="cp"> </span>
+<span class="p"></span>
+<span class="cp">=head1 DESCRIPTION</span>
+<span class="p"></span>
+<span class="cp">The SOMSDS module is a collection of scripts intented to facilitate data </span>
+<span class="cp">sharing among the members of the Sleep&amp;Cognition team of the Netherlands </span>
+<span class="cp">Institute for Neuroscience. </span>
+<span class="p"></span>
+<span class="cp">The standard location of the installed scripts is: </span>
+<span class="p"></span>
+<span class="cp">/usr/local/lib/perl5/site_perl/5.14.1</span>
+<span class="p"></span>
+<span class="cp">The location of the development scripts and the HTML documentation is:</span>
+<span class="p"></span>
+<span class="cp">/data/toolbox/somsds</span>
+<span class="p"></span>
+<span class="cp">The following symbolic links are stored in /usr/local/bin:</span>
+<span class="p"></span>
+<span class="cp">somsds_new   </span>
+<span class="cp">         </span>
+<span class="cp">somsds_new_rec</span>
+<span class="p"></span>
+<span class="cp">somds_remove_rec      </span>
+<span class="p"></span>
+<span class="cp">somds_descriptor      </span>
+<span class="p"></span>
+<span class="cp">somsds_import_rec     </span>
+<span class="p"></span>
+<span class="cp">somsds_update_rec     </span>
+<span class="p"></span>
+<span class="cp">somsds_prune_rec      </span>
+<span class="p"></span>
+<span class="cp">somsds_archive_rec    </span>
+<span class="p"></span>
+<span class="cp">somsds_unarchive_rec  </span>
+<span class="p"></span>
+<span class="cp">somsds_protect_rec</span>
+<span class="p"></span>
+<span class="cp">somsds_unprotect_rec</span>
+<span class="p"></span>
+<span class="cp">somsds_sql            </span>
+<span class="p"></span>
+<span class="cp">=head1 AUTHOR</span>
+<span class="p"></span>
+<span class="cp">German Gomez-Herrero, E&lt;lt&gt;g.gomez@nin.knaw.nlE&lt;gt&gt;</span>
+<span class="p"></span>
+<span class="cp">=head1 COPYRIGHT AND LICENSE</span>
+<span class="p"></span>
+<span class="cp">Copyright (C) 2011 by German Gomez-Herrero</span>
+<span class="p"></span>
+<span class="cp">This library is free software; you can redistribute it and/or modify</span>
+<span class="cp">it under the same terms as Perl itself, either Perl version 5.14.1 or,</span>
+<span class="cp">at your option, any later version of Perl 5 you may have available.</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="cp">=cut</span>
+</pre></div>
+
+<p><span class="p"></span></p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 26.03.2012 15:40.</p>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+Organizing experimental data
+============
+
+[[Parent]]: user_documentation.txt
+
+Bringing old data to the new SOMSDS data structure should be done under the 
+supervision of an administrator. This document describes only what you should
+do to keep your new data organized according to the SOMSDS conventions. The 
+process consists of the steps described in the links below.
+
+
+
+

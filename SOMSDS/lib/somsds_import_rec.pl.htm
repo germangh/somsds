@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Imports data</title>
+<link rel="stylesheet" type="text/css" href="../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>somsds_import_rec.pl</h1>
+<p><a href="utilities.htm">Back to Utility scripts</a></p>
+<p><a href="directory.htm">SOMSDS/lib/</a></p>
+<div class="highlight"><pre><span class="c1">#!/usr/bin/perl</span>
+<span class="c1"># (c) German Gomez-Herrero, g.gomez@nin.knaw.nl</span>
+<span class="p"></span>
+<span class="c1"># Description: Imports data</span>
+<span class="c1"># Documentation: utilities.txt</span>
+<span class="p"></span>
+<span class="k">use</span> <span class="n">SOMSDS</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Getopt::</span><span class="n">Long</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::Spec::</span><span class="n">Functions</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">Cwd</span> <span class="s">&#39;abs_path&#39;</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$root_path</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$descr_regex</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$fuse</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$conf_file</span> <span class="o">=</span> <span class="s">&#39;/etc/SOMSDS.ini&#39;</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$help</span><span class="p">;</span>
+<span class="p"></span>
+<span class="n">GetOptions</span><span class="p">(</span> <span class="s">&quot;descriptor=s&quot;</span> <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$descr_regex</span><span class="p">,</span>    
+            <span class="s">&quot;root=s&quot;</span>       <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$root_path</span><span class="p">,</span>   
+            <span class="s">&quot;fuse&quot;</span>         <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$fuse</span><span class="p">,</span>
+            <span class="s">&quot;conf=s&quot;</span>       <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$conf_file</span><span class="p">,</span>  
+            <span class="s">&quot;help&quot;</span>         <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$help</span><span class="p">);</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="p">(</span><span class="nv">$rec</span><span class="p">,</span> <span class="nv">$dir</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span><span class="nb">shift</span><span class="p">);</span>
+<span class="p"></span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$help</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$rec</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$dir</span><span class="p">){</span>
+  <span class="k">print</span> <span class="s">&quot;</span>
+<span class="p"></span>
+<span class="s">* Imports (copies) data into a recording directory tree</span>
+<span class="s">  </span>
+<span class="s">  Usage: </span>
+<span class="p"></span>
+<span class="s">  somsds_import_rec recid dirtree</span>
+<span class="p"></span>
+<span class="s">  Where:</span>
+<span class="p"></span>
+<span class="s">  recid             A recording ID</span>
+<span class="p"></span>
+<span class="s">  dirtree         The directory tree where the data can be found</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="s">  # OPTIONS</span>
+<span class="s">    </span>
+<span class="p"></span>
+<span class="s">  --fuse          Attempt to fuse the imported data with the destination</span>
+<span class="s">                  data structure. Use this option only if you are importing data</span>
+<span class="s">                  that follows stricly the SOMSDS guidelines</span>
+<span class="p"></span>
+<span class="s">  --conf          Configuration file with a [include] and/or [exclude] sections</span>
+<span class="s">                  that specify which files within the directory tree are to be</span>
+<span class="s">                  copied   </span>
+<span class="s">  </span>
+<span class="s">  --help          Displays this help. Run &#39;perldoc SOMSDS&#39; for more help</span>
+<span class="s">\n&quot;</span><span class="p">;</span>
+  <span class="nb">die</span> <span class="s">&quot;\n&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$ds</span> <span class="o">=</span> <span class="n">SOMSDS</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$root_path</span><span class="p">);</span>
+<span class="k">unless</span> <span class="p">(</span><span class="nv">$ds</span><span class="p">){</span>
+  <span class="nb">die</span> <span class="s">&quot;Could not load the SOMSDS structure: $!&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">unless</span> <span class="p">(</span><span class="o">-</span><span class="n">e</span> <span class="nv">$conf_file</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$vol</span><span class="p">,</span> <span class="nv">$dir</span><span class="p">,</span> <span class="nv">$file</span><span class="p">)</span> <span class="o">=</span> <span class="nn">File::</span><span class="n">Spec</span><span class="o">-&gt;</span><span class="n">splitpath</span><span class="p">(</span><span class="nv">$0</span><span class="p">);</span>
+  <span class="nv">$conf_file</span> <span class="o">=</span> <span class="n">abs_path</span> <span class="n">catfile</span><span class="p">(</span><span class="nv">$dir</span><span class="p">,</span><span class="s">&#39;SOMSDS.ini&#39;</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="nv">$ds</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">import_dir</span><span class="p">(</span><span class="nv">$dir</span><span class="p">,</span> <span class="nv">$fuse</span><span class="p">,</span> <span class="nv">$conf_file</span><span class="p">);</span>
+<span class="p"></span>
+<span class="nv">$ds</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">recording</span><span class="p">}</span><span class="o">-&gt;</span><span class="p">{</span><span class="nv">$rec</span><span class="p">}</span><span class="o">-&gt;</span><span class="n">protect</span><span class="p">();</span>
+</pre></div>
+
+<p><span class="p"></span></p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 26.03.2012 15:40.</p>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Perform analyses</title>
+<link rel="stylesheet" type="text/css" href="../../../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../../../remark_files/pygments.css" />
+
+</head>
+<body>
+<div id = "remark-all">
+<div id = "remark">
+<div class = "ParentList">
+
+<ol>
+<li><a href="somsds.htm">SOMSDS</a></li>
+<li><a href="user_documentation.htm">User Documentation</a></li>
+<li><a href="howto_projects.htm">Perform analyses</a></li>
+</ol>
+</div>
+
+<div class = "remark-end-list"></div>
+
+<h1>Perform analyses</h1>
+<p><a href="user_documentation.htm">Back to User Documentation</a></p>
+<p>When analyzing data, the first thing that you need to do is to generate a 
+<em>project</em> directory where to store your scripts, documents, and intermediate
+and final results. To illustrate the process, we will follow on the <code>bcgs</code> 
+recording that we discussed in <a href="./howto_recordings.htm">Organizing your experimental data</a>.</p>
+<h2>Generate a project folder</h2>
+<p>To generate a <em>project</em> directory containing a set of standard sub-folders run:</p>
+<pre><code>somsds_new_project bcgs gherrero,yvdmeer,jramautar
+</code></pre>
+<p>The first argument to script <code>somsds_new_project</code> is the ID of your project. 
+Since this project is going to involve the analysis of a single recording, it is 
+reasonable to use the same ID for the project and the recording. The second
+argument is a comma separate list of valid usernames. The first user in this 
+list will be considered the responsible of the project and as such he or she 
+will be the owner of the project directories. The other users in this list will
+ all become members of a user group called <code>bcgs</code>, which will be granted write 
+permission on the project folders. If more people become involved in the future
+they should be manually added to the <code>bcgs</code> group.</p>
+<p>Creating user groups and adding users to new groups can only be done by a
+system administrator. This means that you <strong>should ask an admin to generate your 
+project directory tree</strong>.</p>
+<h2>Default directories</h2>
+<p>The default project directory tree consists of the following sub-directories:</p>
+<pre><code>/data/projects/bcgs/tmp
+/data/projects/bcgs/doc
+/data/projects/bcgs/recordings
+/data/projects/bcgs/scripts
+/data/projects/bcgs/analysis
+/data/projects/bcgs/results/articles
+/data/projects/bcgs/results/posters
+/data/projects/bcgs/results/presentations   
+/data/projects/bcgs/results/software
+</code></pre>
+<h3>The <code>tmp</code> folder</h3>
+<p>The <code>tmp</code> folder should be used to store truly temporary data, i.e. after 
+finalizing a project you should be able to empty the <code>tmp</code> folder without
+ risking loosing any relevant data.</p>
+<h3>The <code>doc</code> folder</h3>
+<p>In the <code>doc</code> folder you should store all the documents required for understanding
+your experimental protocol. The <a href="./howto_settings_file.htm">recording settings file</a> and
+ all the relevant <a href="./howto_file_descriptions.htm">name translation files</a> should also be
+ located here. </p>
+<h3>The <code>recordings</code> folder</h3>
+<p>The <code>recordings</code> folder will typically contain symbolic links to the data files
+ that are being used by the project. Below we describe how this links can be
+ generated. It might be a good idea to keep also in this recording single 
+subject analyses and pre-processed files, but this is up to you. </p>
+<h3>The <code>scripts</code> folder</h3>
+<p>The <code>scripts</code> folder contains all the scripts necessary for reproducing all the
+ analyses performed during the project. This folder should also contain a copy
+ of all the toolboxes that were used in the project. This is important in order
+ to ensure that the analyses can be reproduced in the future, even if the 
+relevant toolboxes have changed due to continued development. </p>
+<h3>The <code>analysis</code> folder</h3>
+<p>The results and intermediate steps of your analysis should be stored in the
+ <code>analysis</code> folder. </p>
+<h3>The <code>results</code> folder</h3>
+<p>The <code>results</code> folder should contain only publishable (well documented) outcomes
+ of the project. This includes posters, papers, presentations and also any piece
+ of software developed during the project and that might be publicly released.</p>
+<h2>Link to recording data</h2>
+<h3>Link to /data/recordings/bcgs/subjects</h3>
+<p>The easiest (but not the recommended) way to work with your data is to simply
+ create a symbolic link to <code>/data/recordings/bcgs/subjects</code>. This is done with
+ the command:</p>
+<pre><code>ln -s /data/recordings/bcgs/subjects 
+    /data/projects/bcgs/recordings/svui/subjects
+</code></pre>
+<p>Where the first input path to <code>ln -s</code> is the target path (the data you want to 
+link to) and the second input path is the name that you want to give to your 
+link. </p>
+<h3>Use somsds_link2rec</h3>
+<p>A more flexible alternative for generating symbolic links to the data relevant 
+to the <code>bcgs</code> project is to go to the <code>/data/projects/bcgs/recordings</code> folder 
+and run:</p>
+<pre><code>somsds_link2rec bcgs --modalities eeg,smri
+</code></pre>
+<p>which will create links to all EEG and structural MRI data files of
+recording <code>bcgs</code>. You can also specify a sub-set of subjects, techniques, etc 
+using the correponding options <code>--subjects</code>, <code>--techniques</code>, etc. If you want to
+link to all files from recording <code>bcgs</code>, you can run script <code>somsds_link2rec</code> 
+without any option. The command above will create all the links in folder 
+<code>bcgs</code>:</p>
+<pre><code>[gherrero@somerenserver recordings]$ ls bcgs
+bcgs_0001_eeg_in-noscan_1.mff  bcgs_0002_eeg_in-noscan_1.mff
+bcgs_0001_eeg_in-noscan_2.mff  bcgs_0002_eeg_in-noscan_2.mff
+bcgs_0001_eeg_in-noscan_3.mff  bcgs_0002_eeg_in-noscan_3.mff
+bcgs_0001_eeg_in-noscan_4.mff  bcgs_0002_eeg_in-noscan_4.mff
+bcgs_0001_eeg_in-scan_1.mff    bcgs_0002_eeg_in-scan_1.mff
+bcgs_0001_eeg_in-scan_2.mff    bcgs_0002_eeg_in-scan_2.mff
+bcgs_0001_eeg_in-scan_3.mff    bcgs_0002_eeg_in-scan_3.mff
+bcgs_0001_eeg_in-scan_4.mff    bcgs_0002_eeg_in-scan_4.mff
+bcgs_0001_eeg_out_1.mff        bcgs_0002_eeg_out_1.mff
+bcgs_0001_eeg_out_2.mff        bcgs_0002_eeg_out_2.mff
+bcgs_0001_eeg_out_3.mff        bcgs_0002_eeg_out_3.mff
+bcgs_0001_eeg_out_4.mff        bcgs_0002_eeg_out_4.mff
+bcgs_0001_smri_b1.nii          bcgs_0002_smri_b0.nii
+bcgs_0001_smri_sbrain.nii      bcgs_0002_smri_b1.nii
+bcgs_0001_smri_t1.nii          bcgs_0002_smri_t1.nii
+</code></pre>
+<p>Now you can use the symbolic links above to perform any analysis that you may
+think of. In most aspects these symbolic links can be understood as
+nicely renamed copies of the original data files.</p>
+<p>You may prefer the links to be organized in the same way as in 
+<code>/data/recordings/bcgs</code>, instead of having them all under the same folder. 
+For that you can use the flag <code>--orig</code>:</p>
+<pre><code>somsds_link2rec bcgs --modalities eeg,smri --orig
+</code></pre>
+<p>which will create the folder structure:</p>
+<pre><code>/data/projects/bcgs/recordings/bcgs/subjects/0001/eeg/raw/*.mff
+/data/projects/bcgs/recordings/bcgs/subjects/0001/smri/raw/*.nii
+/data/projects/bcgs/recordings/bcgs/subjects/0001/eeg/raw/*.mff
+/data/projects/bcgs/recordings/bcgs/subjects/0001/smri/raw/*.nii
+</code></pre>
+<p>The organization above is especially handy if you are planning to use software 
+packages that use a similar folder structure (e.g. <a href="http://surfer.nmr.mgh.harvard.edu/">FreeSurfer</a> or
+the <a href="http://www.nmr.mgh.harvard.edu/martinos/userInfo/data/sofMNE.php">MNE software</a>). </p>
+<h2>File permissions</h2>
+<p>A common issue when multiple people work on the same project is the fact that
+files created by one user cannot be read by another user working on the same
+project. For instance consider the case that <code>gherrero</code> creates a file 
+in directory <code>/data/projects/bcgs/scripts/test.m</code>. By default file <code>test.m</code>
+will be owned by the <strong>primary group</strong> of user <code>gherrero</code> which is not 
+necessarily <code>bcgs</code>. Note that a user can belong to multiple groups. As a 
+result <code>test.m</code> will not be executable by user <code>jramautar</code>, even though
+both <code>jramautar</code> and <code>gherrero</code> belong to the group <code>bcgs</code>. The solution to
+this undesired behavior is to run the following command every time you open
+ a command shell window:</p>
+<pre><code>newgrp bcgs
+</code></pre>
+<p>The command above will temporarily change the primary group of <code>gherrero</code> 
+(the currently user of the shell window) to <code>bcgs</code>. Therefore, any file
+ created by <code>gherrero</code> from now on will belong 
+to group <code>bcgs</code> and therefore they will be fully accessible by other members
+of the the <code>bcgs</code> project. Remember that you need to use command <code>newgrp</code> 
+only once for each shell window. It is also important to realize that 
+<code>newgrp</code> will not help you if you typically move or create files from the
+graphical user interface instead of creating them from a shell window.</p>
+<p>If you are not sure of what is your primary group and to which groups you
+belong you can issue the command:</p>
+<pre><code>id -G -n gherrero
+</code></pre>
+<p>where you should change <code>gherrero</code> for your username. The first group in the
+list is that is displayed is your primary group.</p>
+<h2>Pre-processing scripts</h2>
+<p>One of the great advantages of using a consistent organization of data files is 
+that we can easily re-use analysis scripts. Below we show a couple of examples:</p>
+<h3>Freesurfer</h3>
+<p>Imagine we would like to perform a <a href="http://surfer.nmr.mgh.harvard.edu/">FreeSurfer</a> analysis on the 
+two subjects of recording <code>bcgs</code>. You could do that by going to folder 
+<code>/data/projects/bcgs/recordings</code> and running:</p>
+<pre><code>somsds_link2rec bcgs --modality smri --orig
+smri_freesurfer bcgs
+</code></pre>
+<p>The simple script <code>smri_freesurfer</code> can save you some time if you have many
+ subjects. Moreover, it will try to use the <a href="http://www.oracle.com/us/products/tools/oracle-grid-engine-075549.html">Oracle Grid Engine</a> that is 
+installed in the server to run your jobs in parallel and without disturbing 
+too much the work of others. </p>
+<p><strong>NOTE:</strong> By default, Freesurfer generates symbolic links in the subjects 
+folder to the <code>fsaverage</code>, <code>lh.EC_average</code> and <code>rh.EC_average</code> subject 
+directories within the Freesurfer directory tree. This can cause troubles
+if you later move folder <code>bcgs</code> to another system where the location of 
+the Freesurfer installation is different. There are two possible solutions
+to this problem. The first solution is to simply copy those folders rather
+than linking to them:</p>
+<pre><code>somsds_freesurfer bcgs --copyfsavg
+</code></pre>
+<p>The second alternative is to use script <code>somsds_fix_links</code> to fix the 
+broken symbolic links. See below for more information on <code>somsds_fix_links</code>.</p>
+<h3>MNE</h3>
+<p>If you aim to use the <a href="http://www.nmr.mgh.harvard.edu/martinos/userInfo/data/sofMNE.php">MNE software</a> to reconstruct the brain sources 
+underlying your EEG or MEG data, you will have to perform a series of 
+pre-processing steps, as described in the documentation of the MNE software. 
+All these steps can now be simply performed with the commands:</p>
+<pre><code>somsds_link2rec bcgs --modality smri --orig
+smri_mne bcgs
+</code></pre>
+<p>Again, <code>mne_bcgs</code> will use <a href="http://www.oracle.com/us/products/tools/oracle-grid-engine-075549.html">Oracle Grid Engine</a> to run these steps in 
+parallel and without overloading the server. </p>
+<h2>Copying directory trees</h2>
+<p>Consider the case that you want to perform a Freesurfer <code>recon-all</code> analysis
+of the <code>bcgs</code> dataset. Subsequently you want to run all the MNE preprocessing
+steps. You could do something like this:</p>
+<pre><code>somsds_link2rec bcgs --modality smri --orig
+smri_freesurfer bcgs
+smri_mne bcgs
+</code></pre>
+<p>This will result in a single folder called <code>bcgs</code> where <em>both</em> the 
+Freesurfer and MNE results are stored. However, it is much more practical to 
+keep the results of Freesurfer and MNE as separate as possible so that other
+people can link or copy only the folders they are truly interested in. So, 
+a better way of performing these two analysis would be this:</p>
+<pre><code>somsds_link2rec bcgs-freesurfer --modality smri --orig
+smri_freesurfer bcgs-freesurfer
+somsds_link2dir bcgs-freesurfer bcgs-mne
+smri_mne bcgs-mne
+</code></pre>
+<p>The command <code>somsds_link2dir bcgs-freesurfer bcgs-mne</code> will generate a folder
+called <code>bcgs-mne</code> whose contents will be symbolic links to all the files within
+folder <code>bcgs-freesurfer</code>. In this way, running <code>smri_mne bcgs-mne</code> will run
+smoothly as all the MNE software will find the Freesurfer files in their 
+expected locations. At the same time, we are able to keep the Freesurfer and MNE
+results separate, while avoiding duplicating any data. </p>
+<h2>Moving/renaming directory trees</h2>
+<h3>Broken links</h3>
+<p>If you move or rename the directory trees you may break symbolic links. For 
+instance, let us consider the case that we have two directory trees:</p>
+<pre><code>bcgs-freesurfer
+bcgs-mne
+</code></pre>
+<p>The former contains only Freesurfer analyses results while the latter contains
+MNE results plus symbolic links to the various files within the directory
+<code>bcgs-freesurfer</code>. Obviously, it is not generally a good idea to rename or move
+directory <code>bcgs-freesurfer</code>, as doing so will break the symbolic links within
+<code>bcgs-mne</code> that refer to files in the old <code>bcgs-freesurfer</code> directory. See:</p>
+<pre><code>mv bcgs-freesurfer bcgs-new-freesurver
+somsds_broken_links bcgs-mne
+</code></pre>
+<p>The latter command will produce a long list of broken links, which may start like this:</p>
+<pre><code>bcgs-mne/subjects/0001/bem/inner_skull.surf 
+---&gt;&gt;&gt;/bcgs-freesurfer/subjects/0001/bem/watershed/0001_inner_skull_surface
+
+bcgs-mne/subjects/0001/bem/outer_skin.surf 
+---&gt;&gt;&gt;bcgs-freesurfer/subjects/0001/bem/watershed/0001_outer_skin_surface
+</code></pre>
+<p>Fortunately, these broken links can be easily fixed with the utility 
+script <code>somsds_fix_broken_links</code>:</p>
+<pre><code>somsds_fix_links bcgs-mne --old bcgs-freesurfer --new bcgs-new-freesurfer
+</code></pre>
+<p>where the last two arguments are, respectively, the obsolete target directory 
+name and the new target directory name. You can check now that there are no
+broken links anymore:</p>
+<pre><code>somsds_broken_links bcgs-mne
+</code></pre>
+<p>The command above should not output anything, meaning that all symbolic 
+links are pointing to an existing target file. </p>
+<h3>Use somsds_copy_dir and somsds_move_dir</h3>
+<p>Most of the times, you can avoid completely breaking links by using
+the utility scripts <code>somsds_copy_dir</code> and <code>somsds_move_dir</code> to copy or
+move directory trees. These two scripts will automatically fix all the obviously
+wrong symbolic links:</p>
+<pre><code>somsds_copy_dir bcgs-freesurfer bcgs-new-freesurfer
+</code></pre>
+<p>After running the command above, there shouldn't be any broken links within
+directory <code>bcgs-new-freesurfer</code>. However, it is always a good idea to check
+that there are no remaining broken links:</p>
+<pre><code>somsds_broken_links bcgs-new-freesurfer
+</code></pre>
+<h2>Link configuration files</h2>
+<p><strong>NOTE:</strong> This feature has not been throughfully tested.</p>
+<p>This section is only of interest for advanced users that want to have full
+control over the names of the symbolic links that are being generated by
+script <code>somsds_link2rec</code>. By default, <code>somsds_link2rec</code> generates links
+having names like:</p>
+<pre><code>$RECID_$SUJID_$MODID_$DEVICEID_$TECID_$CONDID_$SESSION_$BLOCK&lt;.ext&gt;
+</code></pre>
+<p>and the <code>--orig</code> option forces those links to be located in folders named like:</p>
+<pre><code>$RECNAME/subjects/$SUBJID/$MODID/raw
+</code></pre>
+<p>For instance, the command:</p>
+<pre><code>somsds_link2rec bcgs --modality smri --orig
+</code></pre>
+<p>generated, among others, the symbolic link:</p>
+<pre><code>/data/projects/bcgs/recordings/bcgs/subjects/0002/smri/raw/bcgs_0002_smri_t1.nii
+</code></pre>
+<p>which pointed to this another symbolic link:</p>
+<pre><code>/data/recordings/bcgs/subjects/0002/smri/raw/bcgs_0002_smri_t1.nii
+</code></pre>
+<p>which ultimately pointed to file:</p>
+<pre><code>/data/recordings/bcgs/subjects/0002/smri/orig/ger001_WIP_c32_cap_T1_SENSE_FSL_16_1.nii
+</code></pre>
+<p>However, you might prefer to have a link called:</p>
+<pre><code>/data/projects/bcgs/recordings/0002/0002-t1-smri.nii
+</code></pre>
+<p>instead of the default:</p>
+<pre><code>/data/projects/bcgs/recordings/bcgs/subjects/0002/smri/raw/bcgs_0002_smri_t1.nii
+</code></pre>
+<p>That is, we want to get rid or change the order of some of the tags that appear
+in the link name, change the location of the links and and we also want to
+change the tag separator from an underscore to a hyphen. To achieve this
+ behavior you will have to write a <em>link configuration file</em> 
+(<code>bcgs_link-conf.ini</code>) like the one shown below:</p>
+<pre><code># Link configuration file for project bcgs
+
+[link]
+# How are the full path names of the symbolic links constructed?
+name=SUBJID TECID MODID
+path=SUBJID
+field_sep       =_
+space_char      =-
+</code></pre>
+<p>And then you can run:</p>
+<pre><code>somsds_link2rec bcgs --orig --conf bcgs_link-conf.ini
+</code></pre>
+</div>
+<div id="remark-footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark 1.5.1</a> - Page generated 16.10.2012 17:08.</p>
+</div>
+</div>
+</body>
+</html>

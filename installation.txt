@@ -1,0 +1,71 @@
+Installation
+============
+
+[[Parent]]: somsds.txt
+
+Installing at the somerenserver
+--------
+
+The SOMSDS scripts can be easily installed by uncompressing all the files into
+a folder and running:
+
+	./somsds_install.pl
+
+The command above requires administrator privileges as it places symbolic 
+links in few system directories. To uninstall SOMSDS run:
+
+	./somsds_uninstall.pl
+	
+	
+
+Installing at your local machine
+--------
+
+It is sometimes very convenient to perform analysis on your local machine
+rather than at the server. You can still use the advantages of the 
+somerenserver data structure by:
+
+* Mounting the somerenserver file system in your local machine
+* Installing the SOMSDS scripts at your local machine
+
+As the SOMSDS scripts rely heavily on symbolic links, they can be used 
+only under operating systems that support symbolic links, e.g. Max OS 
+and Linux. It is also possible to use the scripts in Windows using
+[Cygwin][cygwin]. 
+
+[cygwin]: http://www.cygwin.com/
+
+Installation on a machine other than `somerenserver` requires editting
+the configuration file [SOMSDS.ini][somsds-ini] so that the properties
+`root_path` and `arc_folder` under group `somsds` contain the correct locations
+for your system. For instance, under Windows-Cygwin, you may have mounted 
+the somerenserver `data1` file system as a network drive identified by the
+volume `Y:`. In such a case, your [SOMSDS.ini][somsds-ini] file should look 
+like this:
+
+[somsds-ini]: ./SOMSDS/lib/SOMSDS.ini.htm
+
+	[somsds]
+	root_path      =/cygdrive/y/data1
+	arc_folder     =/cygdrive/y/archive
+
+You will also need to modify the properties `spm8` and `fast` under group
+`dependencies` so that they match the locations of the [SPM8][spm] and 
+[FAST][fast] toolboxes on your system. Under a Windows system you may 
+end up with something like this:
+
+[spm]: http://www.fil.ion.ucl.ac.uk/spm/software/spm8/
+[fast]: http://www.montefiore.ulg.ac.be/~phillips/FASST.html
+
+	[dependencies]
+	fast         =D:/mlib/FAST
+	spm8         =D:/mlib/spm8
+	
+Once done the modifications above you can easy install/uninstall the 
+scripts using:
+
+	./somsds_install.pl
+	./somsds_uninstall.pl
+
+
+

@@ -1,0 +1,25 @@
+User Documentation
+============
+
+[[Parent]]: somsds.txt
+
+For a general introduction on naming conventions and standard folders
+read [the SOMSDS data structure][ds]. 
+
+You can use this documentation to learn 
+[how to organize experimental data][howto_recordings]. There is also a section
+that describes how to use the SOMSDS data structure to streamline the way you
+[perform analyses][howto_projects]. 
+ 
+
+[ds]: ./ds.htm
+[howto_recordings]: ./howto_recordings.htm
+[howto_projects]: ./howto_projects.htm
+
+
+	
+
+	
+
+	
+

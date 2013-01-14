@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Generates symbolic links to a recording</title>
+<link rel="stylesheet" type="text/css" href="../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>somsds_link2rec.pl</h1>
+<p><a href="utilities.htm">Back to Utility scripts</a></p>
+<p><a href="directory.htm">SOMSDS/lib/</a></p>
+<div class="highlight"><pre><span class="c1">#!/usr/bin/perl</span>
+<span class="c1"># (c) German Gomez-Herrero, g.gomez@nin.knaw.nl</span>
+<span class="p"></span>
+<span class="c1"># Description: Generates symbolic links to a recording</span>
+<span class="c1"># Documentation: utilities.txt</span>
+<span class="p"></span>
+<span class="k">use</span> <span class="nn">Config::</span><span class="n">IniFiles</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Getopt::</span><span class="n">Long</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">Cwd</span> <span class="sx">qw(abs_path cwd)</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::Spec::</span><span class="n">Functions</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">List::</span><span class="n">MoreUtils</span> <span class="sx">qw(any)</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::</span><span class="n">Path</span> <span class="sx">qw(make_path)</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">File::</span><span class="n">Copy</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">SOMSDS</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">SOMSDS::</span><span class="n">File</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">use</span> <span class="n">strict</span><span class="p">;</span>
+<span class="k">use</span> <span class="n">warnings</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">sub </span><span class="nf">subject_ids</span><span class="p">($$);</span>
+<span class="p"></span>
+<span class="p">my $help;</span>
+<span class="p">my $orig;</span>
+<span class="p">my $ini_file = &#39;/etc/SOMSDS.ini&#39;;</span>
+<span class="p">my ($vol, $dir, $file) = File::Spec-&gt;splitpath($0);</span>
+<span class="p"></span>
+<span class="p">if (-e abs_path(catfile($dir,&#39;SOMSDS.ini&#39;))){</span>
+  <span class="nv">$ini_file</span> <span class="o">=</span> <span class="n">abs_path</span><span class="p">(</span><span class="n">catfile</span><span class="p">(</span><span class="nv">$dir</span><span class="p">,</span><span class="s">&#39;SOMSDS.ini&#39;</span><span class="p">));</span>  
+<span class="p">}</span> 
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$linknames</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$folder</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@subjects_in</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@sexes</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$minage</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$maxage</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@groups</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@modalities</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@conditions</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$condition_regex</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$file_regex</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@devices</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@techniques</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@sessions</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">@file_ext</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$fasttb</span> <span class="o">=</span> <span class="s">&#39;^.+fasttb.*\.mat$&#39;</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$root_path</span><span class="p">;</span>
+<span class="p"></span>
+<span class="n">GetOptions</span><span class="p">(</span> <span class="s">&quot;conf=s&quot;</span>                <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$ini_file</span><span class="p">,</span>
+            <span class="s">&quot;linknames&quot;</span>             <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$linknames</span><span class="p">,</span> 
+            <span class="s">&quot;help&quot;</span>                  <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$help</span><span class="p">,</span> 
+            <span class="s">&quot;orig&quot;</span>                  <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$orig</span><span class="p">,</span>
+            <span class="s">&quot;folder=s&quot;</span>              <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$folder</span><span class="p">,</span>
+            <span class="s">&quot;subjects|subject=s&quot;</span>    <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@subjects_in</span><span class="p">,</span>
+            <span class="s">&quot;sexes|sex=s&quot;</span>           <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@sexes</span><span class="p">,</span>
+            <span class="s">&quot;minage=s&quot;</span>              <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$minage</span><span class="p">,</span>
+            <span class="s">&quot;maxage=s&quot;</span>              <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$maxage</span><span class="p">,</span> 
+            <span class="s">&quot;groups|group=s&quot;</span>        <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@groups</span><span class="p">,</span>
+            <span class="s">&quot;modalities|modality=s&quot;</span> <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@modalities</span><span class="p">,</span>
+            <span class="s">&quot;conditions|condition=s&quot;</span><span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@conditions</span><span class="p">,</span>
+            <span class="s">&quot;cond_regex=s&quot;</span>          <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$condition_regex</span><span class="p">,</span> 
+            <span class="s">&quot;file_regex=s&quot;</span>          <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$file_regex</span><span class="p">,</span>
+            <span class="s">&quot;devices|device=s&quot;</span>      <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@devices</span><span class="p">,</span>
+            <span class="s">&quot;techniques|technique=s&quot;</span><span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@techniques</span><span class="p">,</span>
+            <span class="s">&quot;sessions|session=s&quot;</span>    <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@sessions</span><span class="p">,</span>
+            <span class="s">&quot;file_ext|fext=s&quot;</span>       <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">@file_ext</span><span class="p">,</span>
+            <span class="s">&quot;fasttb&quot;</span>                <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$fasttb</span><span class="p">,</span>   
+            <span class="s">&quot;root_path=s&quot;</span>           <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$root_path</span>            
+          <span class="p">);</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$rec</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$help</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$rec</span><span class="p">){</span>
+  <span class="k">print</span> <span class="s">&quot;</span>
+<span class="s">  </span>
+<span class="s">  Usage: </span>
+<span class="s">  </span>
+<span class="s">  somsds_link2rec recid [--options]</span>
+<span class="s">  </span>
+<span class="s">  Where:</span>
+<span class="s">  </span>
+<span class="s">  recid          A recording ID</span>
+<span class="s">  </span>
+<span class="s">  </span>
+<span class="s">  </span>
+<span class="s">  ## COMMON OPTIONS</span>
+<span class="s">  </span>
+<span class="s">  --folder      full path where the symbolic links will be stored. By default, </span>
+<span class="s">                the links will be stored in a folder called &#39;recid&#39;, under the </span>
+<span class="s">                current working directory.</span>
+<span class="s">  </span>
+<span class="s">  --orig        keep the original folder structure, i.e. do not simply place all</span>
+<span class="s">                the links under &#39;folder&#39; but do create also the subfolders </span>
+<span class="s">                structure as can be found in /data/recordings/[recid]/</span>
+<span class="s">  </span>
+<span class="s">  </span>
+<span class="s">  ## LESS COMMON OPTIONS</span>
+<span class="s">  </span>
+<span class="s">  --subject     comma separated list of subject IDs, e.g. 1,2..5,8</span>
+<span class="s">  </span>
+<span class="s">  --sex         comma separated list of sexes, e.g. M,F</span>
+<span class="s">  </span>
+<span class="s">  --minage      minimum age of the subjects to be processes</span>
+<span class="s">  </span>
+<span class="s">  --maxage      maximum age</span>
+<span class="s">  </span>
+<span class="s">  --group       comma separated list of groups, e.g. controls,AD</span>
+<span class="s">  </span>
+<span class="s">  --modality    comma separated list of modalities, e.g. eeg,smri</span>
+<span class="s">  </span>
+<span class="s">  --condition   comma separated list of conditions, e.g. rs-eo,rs-ec,gonogo</span>
+<span class="p"></span>
+<span class="s">  --cond_regex  a regular expression matching the relevant conditions. For</span>
+<span class="s">                example a cond_regex &#39;^rs&#39; will match all condition IDs that </span>
+<span class="s">                start with the string &#39;rs&#39;    </span>
+<span class="p"></span>
+<span class="s">  --file_regex  a regular expression matching the relevant files          </span>
+<span class="p"></span>
+<span class="s">  --file_ext    a comma separated list of file extensions </span>
+<span class="s">  </span>
+<span class="s">  --device      comma separated list of devices, e.g. egi256</span>
+<span class="s">  </span>
+<span class="s">  --technique   comma separated list of techniques, e.g. t1,dist,prox</span>
+<span class="s">  </span>
+<span class="s">  --session     comma separated list of session IDs, e.g. 1,4</span>
+<span class="s">  </span>
+<span class="s">  --conf        optional configuration file for the generation of the links</span>
+<span class="p"></span>
+<span class="s">  --fasttb      regular expression that matches fast toolbox files</span>
+<span class="p"></span>
+<span class="s">  --linknames   if this flag is provided, will no create links but will just</span>
+<span class="s">                print to the standard output the link names</span>
+<span class="s">  </span>
+<span class="s">  --help        displays this help\n&quot;</span><span class="p">;</span>
+  <span class="nb">die</span> <span class="s">&quot;\n&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">unless</span> <span class="p">(</span><span class="nv">$folder</span><span class="p">){</span>
+  <span class="nv">$folder</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="n">cwd</span><span class="p">(),</span> <span class="nv">$rec</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="nv">$folder</span> <span class="o">=</span> <span class="nn">File::</span><span class="n">Spec</span><span class="o">-&gt;</span><span class="n">rel2abs</span><span class="p">(</span><span class="nv">$folder</span><span class="p">);</span>
+<span class="p"></span>
+<span class="c1"># Merge multiple --condition/--field invocations</span>
+<span class="k">my</span> <span class="nv">$subjects</span>  <span class="o">=</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@subjects_in</span><span class="p">);</span>
+<span class="nv">@sexes</span>        <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@sexes</span><span class="p">));</span>
+<span class="nv">@groups</span>       <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@groups</span><span class="p">));</span>
+<span class="nv">@modalities</span>   <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@modalities</span><span class="p">));</span>
+<span class="nv">@conditions</span>   <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@conditions</span><span class="p">));</span>
+<span class="nv">@devices</span>      <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@devices</span><span class="p">));</span>
+<span class="nv">@techniques</span>   <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@techniques</span><span class="p">));</span>
+<span class="nv">@sessions</span>     <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@sessions</span><span class="p">));</span>
+<span class="nv">@file_ext</span>     <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/,/</span><span class="p">,</span> <span class="nb">join</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">@file_ext</span><span class="p">));</span>
+<span class="p"></span>
+<span class="c1"># Generate subject ids of the form 000x</span>
+<span class="k">my</span> <span class="nv">@subjects</span> <span class="o">=</span> <span class="p">();</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$subjects</span><span class="p">){</span>
+  <span class="k">my</span> <span class="nv">@tmp_subjects</span> <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="sr">/\s*,\s*/</span><span class="p">,</span> <span class="nv">$subjects</span><span class="p">);</span> 
+  <span class="k">foreach</span> <span class="p">(</span><span class="nv">@tmp_subjects</span><span class="p">){</span>    
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$_</span> <span class="o">=~</span> <span class="sr">m/(\d+)\.\.(\d+)/</span><span class="p">){</span>      
+      <span class="k">my</span> <span class="nv">@this_subjects</span> <span class="o">=</span> <span class="n">subject_ids</span><span class="p">(</span><span class="nv">$1</span><span class="p">,</span> <span class="nv">$2</span><span class="p">);</span>  
+      <span class="nv">@subjects</span> <span class="o">=</span> <span class="p">(</span><span class="nv">@subjects</span><span class="p">,</span> <span class="nv">@this_subjects</span><span class="p">);</span>      
+    <span class="p">}</span><span class="k">elsif</span> <span class="p">(</span><span class="nv">$_</span> <span class="o">=~</span> <span class="sr">m/^\d+$/</span><span class="p">){</span>
+      <span class="nb">push</span> <span class="nv">@subjects</span><span class="p">,</span> <span class="n">subject_ids</span><span class="p">(</span><span class="nv">$_</span><span class="p">,</span> <span class="nv">$_</span><span class="p">);</span>  
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+      <span class="nb">push</span> <span class="nv">@subjects</span><span class="p">,</span> <span class="nv">$_</span><span class="p">;</span>    
+    <span class="p">}</span>    
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">@subjects</span><span class="p">){</span>
+  <span class="nv">$subjects</span>  <span class="o">=</span> <span class="s">&#39;\&#39;&#39;</span><span class="o">.</span><span class="nb">join</span><span class="p">(</span><span class="s">&#39;\&#39;,\&#39;&#39;</span><span class="p">,</span> <span class="nv">@subjects</span><span class="p">)</span><span class="o">.</span><span class="s">&#39;\&#39;&#39;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$ds</span>  <span class="o">=</span> <span class="n">SOMSDS</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$root_path</span><span class="p">);</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$query</span> <span class="o">=</span> <span class="s">&quot;SELECT * FROM files WHERE recording=&#39;$rec&#39;&quot;</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$subjects</span><span class="p">){</span>
+  <span class="nv">$query</span> <span class="o">=</span> <span class="nv">$query</span><span class="o">.</span><span class="s">&quot; AND subject IN ($subjects)&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$sth</span> <span class="o">=</span> <span class="nv">$ds</span><span class="o">-&gt;</span><span class="n">sql</span><span class="p">(</span><span class="nv">$query</span><span class="p">);</span>    
+<span class="p"></span>
+<span class="c1"># Read configuration file</span>
+<span class="k">my</span> <span class="nv">$conf</span> <span class="o">=</span> <span class="k">new</span> <span class="nn">Config::</span><span class="n">IniFiles</span><span class="p">(</span><span class="o">-</span><span class="n">file</span> <span class="o">=&gt;</span> <span class="nv">$ini_file</span><span class="p">);</span>
+<span class="p"></span>
+<span class="c1"># Select the relevant files</span>
+<span class="k">my</span> <span class="nv">%files</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$row</span> <span class="o">=</span> <span class="nv">$sth</span><span class="o">-&gt;</span><span class="n">fetchrow_hashref</span><span class="p">){</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$selected</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">@sexes</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">sex</span><span class="p">}}</span> <span class="nv">@sexes</span><span class="p">;</span>
+  <span class="p">}</span>  
+  <span class="k">if</span> <span class="p">(</span><span class="nv">@groups</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">group</span><span class="p">}}</span> <span class="nv">@groups</span><span class="p">;</span>
+  <span class="p">}</span>  
+  <span class="k">if</span> <span class="p">(</span><span class="nv">@modalities</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">modality</span><span class="p">}}</span> <span class="nv">@modalities</span><span class="p">;</span>
+  <span class="p">}</span>  
+  <span class="k">if</span> <span class="p">(</span><span class="nv">@conditions</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">condition</span><span class="p">}}</span> <span class="nv">@conditions</span><span class="p">;</span>
+  <span class="p">}</span>  
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$condition_regex</span><span class="p">){</span>
+    <span class="k">my</span> <span class="nv">$tmp</span> <span class="o">=</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">condition</span><span class="p">};</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="nv">$tmp</span> <span class="o">=~</span> <span class="sr">m/$condition_regex/ig</span><span class="p">;</span>
+  <span class="p">}</span> 
+<span class="p"></span>
+<span class="p"></span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">@devices</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">device</span><span class="p">}}</span> <span class="nv">@devices</span><span class="p">;</span>
+  <span class="p">}</span>  
+  <span class="k">if</span> <span class="p">(</span><span class="nv">@techniques</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">technique</span><span class="p">}}</span> <span class="nv">@techniques</span><span class="p">;</span>
+  <span class="p">}</span>  
+  <span class="k">if</span> <span class="p">(</span><span class="nv">@sessions</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">session</span><span class="p">}}</span> <span class="nv">@sessions</span><span class="p">;</span>
+  <span class="p">}</span>  
+    <span class="k">if</span> <span class="p">(</span><span class="nv">@file_ext</span><span class="p">){</span>
+        <span class="k">my</span> <span class="nv">$tmp</span> <span class="o">=</span> <span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">};</span>
+        <span class="nv">$tmp</span> <span class="o">=~</span> <span class="sr">s%^.+(\.[^./]+)$%$1%</span><span class="p">;</span>
+        <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="n">any</span> <span class="p">{</span><span class="nv">$_</span> <span class="ow">eq</span> <span class="nv">$tmp</span><span class="p">}</span> <span class="nv">@file_ext</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$lname</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$filename</span><span class="p">;</span>
+  <span class="k">my</span> <span class="nv">$link_name</span>  <span class="o">=</span> <span class="nv">$conf</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;link&#39;</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$link_path</span>  <span class="o">=</span> <span class="nv">$conf</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;link&#39;</span><span class="p">,</span> <span class="s">&#39;path&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$sep</span>        <span class="o">=</span> <span class="nv">$conf</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;link&#39;</span><span class="p">,</span> <span class="s">&#39;field_sep&#39;</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">$space</span>      <span class="o">=</span> <span class="nv">$conf</span><span class="o">-&gt;</span><span class="n">val</span><span class="p">(</span><span class="s">&#39;link&#39;</span><span class="p">,</span> <span class="s">&#39;space_char&#39;</span><span class="p">);</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="nv">$file</span>       <span class="o">=</span> <span class="n">File</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$row</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">id</span><span class="p">},</span> <span class="nv">$row</span><span class="p">);</span>
+  <span class="nv">$lname</span>         <span class="o">=</span> <span class="nv">$file</span><span class="o">-&gt;</span><span class="n">link_name</span><span class="p">(</span><span class="nv">$link_name</span><span class="p">,</span> <span class="nv">$link_path</span><span class="p">,</span> <span class="nv">$sep</span><span class="p">,</span> <span class="nv">$space</span><span class="p">);</span>
+  <span class="nv">$filename</span>      <span class="o">=</span> <span class="nv">$file</span><span class="o">-&gt;</span><span class="n">link_name</span><span class="p">();</span>
+<span class="p"></span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$file_regex</span><span class="p">){</span>
+    <span class="nv">$selected</span> <span class="o">=</span> <span class="nv">$selected</span> <span class="o">&amp;</span> <span class="nv">$filename</span> <span class="o">=~</span> <span class="sr">m/$file_regex/ig</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p"></span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$selected</span><span class="p">){</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="p"></span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$orig</span><span class="p">){</span>
+      <span class="k">my</span> <span class="nv">$stem</span>       <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$ds</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">root_path</span><span class="p">},</span> <span class="nv">$ds</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">rec_folder</span><span class="p">},</span> <span class="nv">$rec</span><span class="p">);</span>
+      <span class="nv">$stem</span>          <span class="o">=~</span> <span class="sr">s%\\%/%g</span><span class="p">;</span>   
+      <span class="nv">$lname</span>         <span class="o">=~</span> <span class="sr">s%\\%/%g</span><span class="p">;</span>   
+      <span class="nv">$lname</span>         <span class="o">=~</span> <span class="sr">s%^$stem.%%</span><span class="p">;</span>    
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+      <span class="p">(</span><span class="k">my</span> <span class="nv">$tmp1</span><span class="p">,</span> <span class="k">my</span> <span class="nv">$tmp2</span><span class="p">,</span> <span class="nv">$lname</span><span class="p">)</span> <span class="o">=</span> <span class="nn">File::</span><span class="n">Spec</span><span class="o">-&gt;</span><span class="n">splitpath</span><span class="p">(</span><span class="nv">$lname</span><span class="p">);</span>    
+      <span class="c1">#$lname         =~ s%.+/([^\\/]+)$%$1%;</span>
+    <span class="p">}</span>
+<span class="p"></span>
+    <span class="k">my</span> <span class="nv">$is_fasttb</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$filename</span> <span class="o">=~</span> <span class="sr">m/$fasttb/ig</span><span class="p">);</span>
+<span class="p"></span>
+    <span class="nv">$lname</span>         <span class="o">=</span> <span class="n">catfile</span><span class="p">(</span><span class="nv">$folder</span><span class="p">,</span> <span class="nv">$lname</span><span class="p">);</span>   
+<span class="p"></span>
+    <span class="nv">$files</span><span class="p">{</span><span class="nv">$lname</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="n">filename</span>  <span class="o">=&gt;</span> <span class="nv">$filename</span><span class="p">,</span> 
+                      <span class="n">is_fasttb</span> <span class="o">=&gt;</span> <span class="nv">$is_fasttb</span><span class="p">};</span>
+<span class="p"></span>
+  <span class="p">}</span>
+<span class="p">}</span> 
+<span class="p"></span>
+<span class="k">unless</span> <span class="p">(</span><span class="nv">$linknames</span> <span class="o">||</span> <span class="o">-</span><span class="n">e</span> <span class="nv">$folder</span><span class="p">){</span>
+  <span class="nb">mkdir</span> <span class="nv">$folder</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="c1"># Create the links</span>
+<span class="k">while</span> <span class="p">(</span><span class="k">my</span> <span class="p">(</span><span class="nv">$lname</span><span class="p">,</span><span class="nv">$value</span><span class="p">)</span> <span class="o">=</span> <span class="nb">each</span><span class="p">(</span><span class="nv">%files</span><span class="p">)){</span>
+<span class="p"></span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$volume</span><span class="p">,</span> <span class="nv">$path</span><span class="p">)</span> <span class="o">=</span> <span class="nn">File::</span><span class="n">Spec</span><span class="o">-&gt;</span><span class="n">splitpath</span><span class="p">(</span><span class="nv">$lname</span><span class="p">);</span>
+  <span class="nv">$path</span> <span class="o">=</span> <span class="n">catdir</span><span class="p">(</span><span class="nv">$volume</span><span class="p">,</span> <span class="nv">$path</span><span class="p">);</span>
+  <span class="c1">#$path =~ s%^(.+)/[^/]+$%$1%;</span>
+<span class="p"></span>
+<span class="p"></span>
+  <span class="k">if</span> <span class="p">(</span><span class="nv">$linknames</span><span class="p">){</span>
+    <span class="k">print</span> <span class="s">&quot;$lname\n&quot;</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">make_path</span> <span class="nv">$path</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">is_fasttb</span><span class="p">}){</span>
+      <span class="c1"># If it is a fast file we must copy it instead of linking to it</span>
+      <span class="n">copy</span><span class="p">(</span><span class="nv">$value</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">filename</span><span class="p">},</span> <span class="nv">$lname</span><span class="p">);</span>    
+      <span class="k">print</span> <span class="s">&quot;$lname \n--&gt;&gt; $value-&gt;{filename}\n\n&quot;</span><span class="p">;</span>
+      <span class="k">print</span> <span class="s">&quot;Fixing $lname...&quot;</span><span class="p">;</span>
+      <span class="nn">File::</span><span class="n">fix_fasttb</span><span class="p">(</span><span class="nv">$lname</span><span class="p">);</span>
+      <span class="k">print</span> <span class="s">&quot;[done]\n\n&quot;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nb">symlink</span> <span class="nv">$value</span><span class="o">-&gt;</span><span class="p">{</span><span class="n">filename</span><span class="p">},</span> <span class="nv">$lname</span> <span class="o">||</span> 
+        <span class="nb">die</span> <span class="s">&quot;Failed to produce link:\n&quot;</span><span class="o">.</span>
+              <span class="s">&quot;$lname --&gt;&gt; $value-&gt;{filename}\n&quot;</span><span class="p">;</span>   
+      <span class="k">print</span> <span class="s">&quot;$lname \n--&gt;&gt; $value-&gt;{filename}\n\n&quot;</span><span class="p">;</span>          
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p"></span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">sub </span><span class="nf">subject_ids</span><span class="p">($$)</span> <span class="p">{</span>
+  <span class="k">my</span> <span class="p">(</span><span class="nv">$first</span><span class="p">,</span> <span class="nv">$last</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="nb">shift</span><span class="p">,</span> <span class="nb">shift</span><span class="p">);</span>
+  <span class="k">my</span> <span class="nv">@ids</span> <span class="o">=</span> <span class="p">();</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">my</span> <span class="nv">$i</span><span class="o">=</span><span class="nv">$first</span><span class="p">;</span> <span class="nv">$i</span><span class="o">&lt;=</span><span class="nv">$last</span><span class="p">;</span> <span class="o">++</span><span class="nv">$i</span><span class="p">){</span>
+    <span class="nb">push</span> <span class="nv">@ids</span><span class="p">,</span> <span class="s">&quot;0&quot;</span><span class="n">x</span><span class="p">(</span><span class="mi">4</span><span class="o">-</span><span class="nb">length</span><span class="p">(</span><span class="s">&quot;$i&quot;</span><span class="p">))</span><span class="o">.</span><span class="s">&quot;$i&quot;</span><span class="p">;</span>    
+  <span class="p">}</span>
+  <span class="nv">@ids</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+
+<p><span class="p"></span></p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 26.03.2012 15:40.</p>
+</div>
+</div>
+</body>
+</html>

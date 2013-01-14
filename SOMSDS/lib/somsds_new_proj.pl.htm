@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Creates a project directory tree</title>
+<link rel="stylesheet" type="text/css" href="../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>somsds_new_proj.pl</h1>
+<p><a href="utilities.htm">Back to Utility scripts</a></p>
+<p><a href="directory.htm">SOMSDS/lib/</a></p>
+<div class="highlight"><pre><span class="c1">#!/usr/bin/perl</span>
+<span class="c1"># (c) German Gomez-Herrero, g.gomez@nin.knaw.nl</span>
+<span class="p"></span>
+<span class="c1"># Description: Creates a project directory tree</span>
+<span class="c1"># Documentation: utilities.txt</span>
+<span class="p"></span>
+<span class="k">use</span> <span class="n">SOMSDS</span><span class="p">;</span>
+<span class="k">use</span> <span class="nn">Getopt::</span><span class="n">Long</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$root_path</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$help</span><span class="p">;</span>
+<span class="p"></span>
+<span class="n">GetOptions</span><span class="p">(</span> <span class="s">&quot;root=s&quot;</span>                   <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$root_path</span><span class="p">,</span>                       
+            <span class="s">&quot;help&quot;</span>                    <span class="o">=&gt;</span> <span class="o">\</span><span class="nv">$help</span>
+          <span class="p">);</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$id</span>      <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$members</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="p"></span>
+<span class="k">if</span> <span class="p">(</span><span class="nv">$help</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$id</span><span class="p">){</span>
+  <span class="k">print</span> <span class="s">&quot;* Creates a project folder structure</span>
+<span class="s">  </span>
+<span class="s">  Usage:</span>
+<span class="s">  </span>
+<span class="s">  somsds_new_proj projid members [--options]</span>
+<span class="s">  </span>
+<span class="s">  Where:</span>
+<span class="s">  </span>
+<span class="s">  projid          A project ID</span>
+<span class="s">  </span>
+<span class="s">  members         A comma separated list of user names. The first member of the</span>
+<span class="s">                  list will be the owner of the generated folder structure. A</span>
+<span class="s">                  user group with the same name as the project will be generated</span>
+<span class="s">                  and all the provided project members will be assigned to that</span>
+<span class="s">                  group</span>
+<span class="s">                  </span>
+<span class="s"> ## OPTIONS:</span>
+<span class="s"> </span>
+<span class="s">  --help          displays this help. Run &#39;perldoc SOMSDS&#39; for more help\n&quot;</span><span class="p">;</span>
+  <span class="nb">die</span> <span class="s">&quot;\n&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">$ds</span>  <span class="o">=</span> <span class="n">SOMSDS</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span><span class="nv">$root_path</span><span class="p">);</span>
+<span class="p"></span>
+<span class="k">unless</span> <span class="p">(</span><span class="nv">$members</span><span class="p">){</span>
+  <span class="nv">$members</span> <span class="o">=</span> <span class="nb">getpwuid</span><span class="p">(</span> <span class="vg">$&lt;</span> <span class="p">);</span>
+<span class="p">}</span>
+<span class="p"></span>
+<span class="k">my</span> <span class="nv">@members</span> <span class="o">=</span> <span class="nb">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span> <span class="nv">$members</span><span class="p">);</span>
+<span class="p"></span>
+<span class="nv">$ds</span><span class="o">-&gt;</span><span class="n">make_proj_folders</span><span class="p">(</span><span class="nv">$id</span><span class="p">,</span> <span class="o">\</span><span class="nv">@members</span><span class="p">);</span>
+</pre></div>
+
+<p><span class="p"></span></p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 26.03.2012 15:40.</p>
+</div>
+</div>
+</body>
+</html>

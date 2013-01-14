@@ -1,0 +1,27 @@
+SOMSDS
+===
+
+_SOMSDS_ is a package of Perl scripts for easy organization within a research
+group of recording-related data (e.g. raw EEG or fMRI measurements) and 
+projects-related data, i.e. analyses performed on one or more recordings.
+In particular, the scripts implement the standard data structure used at the 
+[Sleep & Cognition][scpage] group of the 
+[Netherlands Institute for Neuroscience][ninpage] (NIN).
+
+
+Features of the package
+--------
+
+* Generation of standard directory trees
+
+* Import directory trees that do not follow the SOMSDS conventions
+
+* Consistency checks that will detect most common errors when documenting
+data files
+
+* SQL interface for retrieving relevant data files
+
+* Easy archiving/archiving of experimental data
+
+
+

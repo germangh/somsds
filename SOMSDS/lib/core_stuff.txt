@@ -1,0 +1,19 @@
+Core stuff
+==========
+
+[[Parent]]: implementation.txt
+
+The implementation of SOMSDS consists of a series of the following components:
+
+* Three user-defined classes: SOMSDS, Recording and File
+
+* A set of utility scripts implementing various utilities
+
+* A configuration file: SOMSDS.ini
+
+The core functionality is implemented in the SOMSDS, Recording and File classes.
+
+
+
+
+

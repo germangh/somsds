@@ -1,0 +1,275 @@
+/*
+Default stylesheet for Remark.
+*/
+
+html, body 
+{
+    height: 100%;
+}
+
+body 
+{
+    /* Fonts from the sans-serif generic family are easier to read. 
+    Sans-serif means roughly 'without wiggles'. */
+    font-family: sans-serif;
+    /* See the W3C CSS School for this trick. */
+    font-size: 100%;
+    /* Using more space between lines of text makes it easier to read. */
+    line-height: 1.3em;
+    /* Using margins, the text concentrates more tighly
+    towards the center. There will be empty regions on both 
+    sides. I find this easier to read. */
+    margin-left: 25%;
+    margin-right: 25%;
+}
+
+/* Verbatim content */
+#remark pre
+{
+    /* Verbatim content is bordered with a dotted, one-pixel wide rectangle. */
+    border-style: dotted;
+    border-width: 1px;
+    border-color: rgb(85, 85, 85);
+
+    /* Its background is colored light green. */
+    background-color: rgb(234, 240, 255);
+
+    /* The verbatim content should be indented somewhat. */
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 40px;
+    margin-right: 0px;
+    
+    /* The verbatim content box should always have the same width.
+    This is because it must be able to hold some 70 characters
+    of source code per line. Yes, it is ugly when resizing, but
+    what can you do... */
+    width: 55em;
+    
+    /* The content should not be near the border. */
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+}
+
+#remark
+{
+    /* There should be some empty space before the footer. */
+    padding-bottom: 60px;
+}
+
+/* Normal text */
+#remark p
+{
+    margin-left: 0px;
+    text-align: justify;
+}
+
+/* Code */
+#remark code
+{
+    color: #505080;
+    font-size: 1.2em;
+    font-family: monospace;
+}
+
+/* Level 1 headings */
+#remark h1
+{
+    margin: 1.5em 0em 1em 0em;
+    /* Draw a dotted line under the heading. */
+    border-bottom: 2px dotted #aca899;
+    /* Make some space between the heading and the line under it.*/ 
+    padding-bottom: 0.4em;
+    letter-spacing: 0.7em;
+    font-size: 1.6em;
+    font-weight: normal;
+    font-family: 'Trebuchet MS',Arial;
+    color: #656565;
+    line-height: 1.5em;
+}
+
+/* Level 2 headings */
+#remark h2 
+{
+    margin: 1.5em 0em 1em 0em;
+    /* Draw a dotted line under the heading. */
+    border-bottom: 1px dotted #aca899;
+    /* Make some space between the heading and the line under it.*/ 
+    padding-bottom: 0.4em;
+    letter-spacing: 0.3em;
+    font-size: 1.4em;
+    font-weight: normal;
+    font-family:'Trebuchet MS',Arial;
+    color: #656565;
+}
+
+/* Level 3 headings */
+#remark h3 
+{
+    margin: 1.5em 0em 1em 0em;
+    font-size: 1.2em;
+    font-weight: normal;
+    font-family:'Trebuchet MS',Arial;
+    color: #356535;
+}
+
+/* Level 4 headings */
+#remark h4 
+{
+    margin: 1.5em 0em 1em 0em;
+    font-size: 1.0em;
+    font-weight: normal;
+    font-family:'Trebuchet MS',Arial;
+    color: #255525;
+}
+
+/* Images */
+#remark img 
+{
+    /* We would like to add a 1 pixel border
+    around the image to make it stand out. */
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(0, 0, 0);
+}
+
+/* Unordered lists (bullets) */
+#remark ul 
+{
+    list-style: disk;
+}
+
+/* Ordered lists */
+#remark ol
+{
+    list-style-type: decimal;
+}
+
+/* A list item */
+#remark li 
+{
+}
+
+/* Links */
+#remark a 
+{ 
+    text-decoration: none; 
+    color: #a00000; 
+}
+
+/* Links when the mouse is hold over them */
+#remark a:hover 
+{ 
+    text-decoration: underline; 
+    color: #600000; 
+}
+
+/* Tables */
+#remark table
+{
+    border-collapse: collapse;
+    /* We would like to indent tables a bit. 
+    Note the amount of indentation matches with the amount
+    for the verbatim content.*/
+    margin-left: 40px;
+}
+
+/* Tables and cells*/
+#remark table, th, td
+{
+    /* Give them a one-pixel wide border. */
+    border: 1px solid black;
+}
+
+/* Tables: Cells */
+#remark td, th
+{
+    /* Give some empty space around the content of a cell. */
+    padding: 5px;
+}
+
+/* Table: Cells: Headers */
+#remark th
+{
+    color: Maroon;
+}
+
+/* Table: Cells: Data */
+#remark td
+{
+}
+
+/* Definition lists */
+#remark dl
+{
+}
+
+/* Tables */
+#remark table.division
+{
+    border-collapse: collapse;
+    width: 100%;
+    margin-left: 0px;
+}
+
+/* Tables: Cells */
+#remark td.division, th.division
+{
+}
+
+/* Tables and cells*/
+#remark table.division, th.division, td.division
+{
+    /* Give them a one-pixel wide border. */
+    border-style: none;
+}
+
+/* Definition lists: The thing to define. */
+#remark dt
+{
+    /*font-weight: bold;*/
+    /*font-size: 1em;*/
+    color: Maroon;
+}
+
+/* Definition lists: The definition of the thing. */
+#remark dd
+{
+}
+
+/* Remark generates some stuff in the 'footer' div. */
+
+#footer 
+{
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    height: 30px;
+}
+
+#footer p 
+{
+    border-top: 1px dotted #716f64;
+    font-size: 0.7em;
+    font-family:'Trebuchet MS',Arial;
+    color: #716f64;
+}
+#footer a 
+{ 
+    text-decoration: none; 
+    color: #716f64; 
+}
+
+#footer a:hover 
+{ 
+    text-decoration: underline; 
+    color: #600; 
+}
+
+#container 
+{
+    min-height: 100%;
+    position: relative;
+}

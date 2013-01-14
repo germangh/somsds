@@ -1,0 +1,67 @@
+# Description of recording cesl
+
+[recording]
+id=cesl
+description=Description
+responsible=iverweij
+
+[modality eeg]
+
+[modality smri]
+
+[modality behavior]
+
+[modality actigraphy]
+
+[technique t1]
+
+[technique dti]
+
+[condition rs-eo]
+description=Resting state eyes open
+
+[condition rs-ec]
+description=Resting state eyes closed
+
+[condition task1]
+description=Short task description
+
+[condition task2]
+description=Short task description
+
+[condition vas1]
+description=Short task description
+
+[condition vas2]
+description=Short task description
+
+[condition sleep]
+description=Sleep
+
+[condition wake]
+wake=wake
+
+[session 1]
+description=what is session 1
+
+[session 2]
+
+[session 3]
+
+[session 4]
+
+[subject 1]
+sex=M
+age=29
+
+[subject 5]
+sex=F
+age=50
+
+[group controls]
+subjects=1
+
+[group parkinson]
+subjects=2
+
+

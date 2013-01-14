@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Step 2: Generate the directory tree</title>
+<link rel="stylesheet" type="text/css" href="../../../../remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="../../../../remark_files/pygments.css" />
+
+</head>
+<body>
+<div id = "remark-all">
+<div id = "remark">
+<div class = "ParentList">
+
+<ol>
+<li><a href="somsds.htm">SOMSDS</a></li>
+<li><a href="user_documentation.htm">User Documentation</a></li>
+<li><a href="howto_recordings.htm">Organizing experimental data</a></li>
+<li><a href="howto_dirtree.htm">Step 2: Generate the directory tree</a></li>
+</ol>
+</div>
+
+<div class = "remark-end-list"></div>
+
+<h1>Step 2: Generate the directory tree</h1>
+<p><a href="howto_recordings.htm">Back to Organizing experimental data</a></p>
+<p>Once we have fully specified our recording using file <code>bcgs_settings.ini</code> we 
+can generate the standard folder structure and place our data files in the 
+correct locations.</p>
+<h2>Directory tree</h2>
+<p>In order to generate the directory tree for recording <code>bcgs</code> run:</p>
+<pre><code>somsds_new_rec bcgs_settings.ini
+</code></pre>
+<p>which will create, among others, the following directories:</p>
+<pre><code>/data/recordings/bcgs/subjects/0001/eeg/orig/out
+/data/recordings/bcgs/subjects/0001/eeg/orig/in-scan
+/data/recordings/bcgs/subjects/0001/eeg/orig/in-noscan
+/data/recordings/bcgs/subjects/0001/fmri/orig/out
+/data/recordings/bcgs/subjects/0001/fmri/orig/in-scan
+/data/recordings/bcgs/subjects/0001/fmri/orig/in-noscan
+/data/recordings/bcgs/subjects/0001/smri/orig/out
+/data/recordings/bcgs/subjects/0001/smri/orig/in-scan
+/data/recordings/bcgs/subjects/0001/smri/orig/in-noscan
+...
+</code></pre>
+<p>All directories above will be owned by the username responsible of recording 
+<code>bcgs</code> (in our case user <code>gherrero</code>). By default, nobody (not even <code>gherrero</code>) 
+will be allowed to write anything into those folders. We say that recording 
+<code>bcgs</code> is <em>protected</em> (i.e. it cannot be erased or rewritten accidentally, even
+by its responsible). See:</p>
+<pre><code>[gherrero@somerenserver ~]$ ls /data/recordings
+total 96
+dr-xr-xr-x 5 gherrero  mt   4096 Oct 11 21:30 bcgs
+</code></pre>
+<h2>Move data files</h2>
+<p>You must now put the experimental data files in the right folders. In order
+to do that, you will first have to <em>unprotect</em> the recording so that you are 
+allowed to write to the directory tree <code>/data/recordings/bcgs</code>. Run:</p>
+<pre><code>somsds_unprotect_rec bcgs
+</code></pre>
+<p>which will give <strong>only</strong> <code>gherrero</code> (the responsible of recording <code>bcgs</code>) write 
+permission. See:</p>
+<pre><code>[gherrero@somerenserver ~]$ ls /data/recordings/ -l
+total 96
+drwxr-xr-x 5 gherrero  mt   4096 Oct 11 21:30 bcgs
+</code></pre>
+<p>Now you are free to start moving files to their corresponding locations. 
+In the case of modalities <code>smri</code> and <code>fmri</code> the <code>condition</code> is irrelevant and
+therefore you can simply put the data files under the <code>orig</code> folders. So, 
+in our <code>bcgs</code> example we placed the MRI files (including the scanner 
+log files) in the locations:</p>
+<pre><code>/data/recordings/bcgs/subjects/0001/fmri/orig
+/data/recordings/bcgs/subjects/0002/fmri/orig
+/data/recordings/bcgs/subjects/0001/smri/orig
+/data/recordings/bcgs/subjects/0002/smri/orig
+</code></pre>
+<p>We then placed the EEG files for condition <code>out</code> in the locations:</p>
+<pre><code>/data/recordings/bcgs/subjects/0001/eeg/orig/out
+/data/recordings/bcgs/subjects/0002/eeg/orig/out
+</code></pre>
+<p>And, similarly, we placed the EEG files for conditions <code>in-scan</code> and <code>in-noscan</code>
+in the locations:</p>
+<pre><code>/data/recordings/bcgs/subjects/0001/eeg/orig/in-scan
+/data/recordings/bcgs/subjects/0001/eeg/orig/in-noscan
+/data/recordings/bcgs/subjects/0002/eeg/orig/in-scan
+/data/recordings/bcgs/subjects/0002/eeg/orig/in-noscan
+</code></pre>
+<p>Feel free to inspect directory tree <code>/data/recordings/bcgs</code> to check which 
+files the folders above contain. </p>
+<h2>Move bcgs_settings.ini</h2>
+<p>You should place your recording settings file (<code>bcgs_settings.ini</code>) in folder
+<code>/data/recordings/bcgs/doc</code>. This is important, as you will need this file in 
+the future (e.g. for generating additional directories when you acquire more
+ data).</p>
+<h2>Delete empty directories</h2>
+<p>This is an optional step. After following the instructions above you will end 
+up with a directory tree <code>/data/recordings/bcgs</code> that contains lots of empty
+directories. One of the reasons for this is that some conditions might not be
+relevant for some modalities (e.g. none of the conditions <code>out</code>, <code>in-scan</code>, 
+<code>in-noscan</code> were relevant for the fMRI modality). You can easily remove all 
+these empty directories by running:</p>
+<pre><code>somsds_prune_rec bcgs
+</code></pre>
+<p>The command above will not remove the <code>doc</code> directories, even if they are 
+empty. To force removal of empty <code>doc</code> directories use:</p>
+<pre><code>somsds_prune_rec bcgs --doc
+</code></pre>
+<h2>Protect recording</h2>
+<p>It is strongly recommended that you <em>protect</em> again the recording once 
+you are done moving files into <code>/data/recordings/bcgs</code>. To do that you should
+run the command:</p>
+<pre><code>somsds_protect_rec bcgs
+</code></pre>
+<p>This will prevent that you accidentally delete data from <code>/data/recordings/bcgs</code>.</p>
+<h2>What now?</h2>
+<p>We are now ready to go to the <a href="./howto_file_descriptions.htm">next step</a>, that is to
+attach a series of descriptor tags to the most relevant experimental data files.</p>
+</div>
+<div id="remark-footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark 1.5.1</a> - Page generated 16.10.2012 17:08.</p>
+</div>
+</div>
+</body>
+</html>

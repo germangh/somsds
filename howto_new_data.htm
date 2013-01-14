@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<title>Import newly acquired data</title>
+<link rel="stylesheet" type="text/css" href="remark_files/remark.css" />
+<link rel="stylesheet" type="text/css" href="remark_files/pygments.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+</head>
+<body>
+<div id = "container">
+<div id = "remark">
+<h1>Import newly acquired data</h1>
+<p><a href="orphan.htm">Back to Orphans</a></p>
+<p>On the first day of the <code>gngg</code> data acquisition project discussed <a href="./howto_new_rec.htm">before</a>
+we are planning to record only fMRI data from two subjects (identified by the
+IDs '0003' and '0007') and only for the <code>rs</code> condition. </p>
+<h2>Temporal folder structure</h2>
+<p>First you need to create a temporary data structure to hold the data that will
+be acquired:</p>
+<pre><code>somsds_new_rec gngg_day1 --tmp --modalities fmri \
+    --subjects 3,7 --conditions rs
+</code></pre>
+<p>Remember to use the <code>--tmp</code> flag which indicates that you do not wish to create 
+a new entry in the database of active recordings but you simply want to create
+a temporary directory tree to hold the data. The command above is one of the few
+SOMSDS commands that you will be able to run without superuser privileges. </p>
+<p>The previous command will create the following data structure:</p>
+<pre><code>gngg_day1/subjects/0003/fmri/orig/rs
+gngg_day1/subjects/0003/fmri/conv/rs
+gngg_day1/subjects/0003/fmri/raw
+gngg_day1/subjects/0007/fmri/orig/rs
+gngg_day1/subjects/0007/fmri/conv/rs
+gngg_day1/subjects/0007/fmri/raw
+</code></pre>
+<p>Place the fMRI data (e.g. a <code>par/rec</code> pair of files) for the <code>rs</code> condition of
+subject <code>0007</code> under:</p>
+<pre><code>gngg_day1/subjects/0007/fmri/orig/rs
+</code></pre>
+<p>Convert the par/rec pair of files to NIFTI format and store the resulting <code>.nii</code>
+file in:</p>
+<pre><code>gngg_day1/subjects/0007/fmri/conv/rs
+</code></pre>
+<p>The conversion from <code>par/rec</code> to <code>.nii</code> format will be done automatically in a
+future version of the scripts but, for now, you will have to do this step 
+manually, or using your own scripts. After all the data has been acquired your
+temporary data structure should look similar to this:</p>
+<pre><code>gngg_day1/subjects/0003/fmri/orig/rs/subj3fmri.nii
+gngg_day1/subjects/0007/fmri/orig/rs/DICOM-files/*
+gngg_day1/subjects/0007/fmri/orig/rs/subj7fmri.par
+gngg_day1/subjects/0007/fmri/orig/rs/subj7fmri.rec
+gngg_day1/subjects/0007/fmri/orig/rs/DICOM-files/*
+gngg_day1/subjects/0007/fmri/conv/rs/subj7fmri.nii
+</code></pre>
+<p>Note that under the <code>orig/rs</code> directories you can place an arbitrary number of 
+sub-directories containing e.g. DICOM files.</p>
+<h2>Import configuration file</h2>
+<p>The <em>import configuration file</em> has to be written by someone that knows the
+basics of POSIX regular expressions. If you don't know what a regular expression
+is, just ask a colleague to write this configuration file for you. 
+This has to be done only once and can be typically done in just few minutes.</p>
+<p>In our example recording <code>gngg</code> there are only three data <code>fields</code> or <code>labels</code>
+that are relevant: subject ID (<code>0003</code> or <code>0007</code>), modality ID (<code>fmri</code>) and
+condition ID (<code>rs</code> or <code>go-nogo</code>). However, in other recordings you may have 
+more or less relevant <code>fields</code>. For instance, in ambulatory temperature 
+recordings it is often relevant the field <code>technique</code>, which is used to specify
+the location(s) at which the temperature data was acquired. Obviously, the 
+SOMSDS scripts need to be told somehow which fields are relevant and how to 
+guess the field values for each data file, using only the full path name of the
+file. This information is provided in a configuration file. It is usually a good
+idea to name the configuration file as the recording and use the extension 
+<code>.ini.</code>. So, in our <code>gngg</code> recording we would need to write the following
+<strong>gngg.ini</strong> file:</p>
+<pre><code># Name of the two descriptor files that will be generated
+[Descriptor]
+file    = files.csv
+subject = subjects.csv
+
+# How is the subject number encoded in the file name?
+[Subject]
+regexp  = "s%^.+/(\d\d\d\d)/.+\..+$%$1%"
+
+# How is the modality encoded in the file name?
+[Modality]
+regexp  = "s%^.+/fmri/.+$%$1%"
+
+# How is condition encoded?
+[Condition]
+regexp  = "s%^.+(conv|orig)/([^/]+)/.+$%$2%"
+</code></pre>
+<p>As you can imagine, in an ambulatory temperature recording there will usually
+be an additional section <code>[Technique]</code> that will specify the regular expression
+that can be used to translate the name of a file into its corresponding 
+<code>technique</code> (e.g. <code>dist</code> or <code>prox</code>). Something like this:</p>
+<pre><code># How is technique encoded?
+[Technique]
+regexp = "s%^.+(dist|prox).+$%$1%"
+</code></pre>
+<h2>Data labeling</h2>
+<p>Document the data files that you acquired on the first day of the <code>gngg</code> data
+acquisition project. To do that simply run:</p>
+<pre><code>somsds_descriptor gngg_day1 --conf gngg.ini
+</code></pre>
+<p>where I have assumed that the <strong>gngg_day</strong> directory tree and the <strong>gngg.ini</strong>
+file are both at your current working folder. You should be able to run the
+command above without superuser privileges, as <code>somsds_descriptor</code> requires 
+only write permission on directory <code>ggngg_day1</code>.  The <code>somsds_descriptor</code> 
+script will generate two .csv files:</p>
+<p><strong>gngg_day1/files.csv</strong> :</p>
+<pre><code>"filename","subject","modality","device","technique","condition","session","block"
+"subjects/0007/fmri/orig/RS/subj7fmri.nii","0007","fmri",,,"rs",,
+"subjects/0003/fmri/orig/RS/subj3fmri.nii","0003","fmri",,,"rs",,
+</code></pre>
+<p><strong>gngg_day1/subjects.csv</strong> :</p>
+<pre><code>"id","sex","age","group"
+"0003","","",""
+"0007","","",""
+</code></pre>
+<p>You should manually incorporate to <code>subjects.csv</code> information regarding the sex,
+age and, if relevant, group to which each subject belongs. If you prefer you can
+also generate these two files from scratch either manually or using your own
+scripts. As long as the contents of the files look like above you will be able to
+easily import your data in the next step.</p>
+<h2>Import temporal data</h2>
+<p>Once you are back at the NIN, take the temporary <strong>gngg_day1</strong> directory tree
+that you filled during your recording session and place it somewhere in the
+somerenserver, e.g. in you home folder. Then run:</p>
+<pre><code>somsds_import_rec gngg ~/gngg_day1 --fuse
+</code></pre>
+<p>The <code>--fuse</code> flag should be only used when the temporary data structure that you
+are trying to import follows exactly the standard guidelines (e.g. when the
+temporary structure was generated by <code>somsds_new_rec TMPDIR --tmp</code>). </p>
+<p>The <code>somsds_import_rec</code> command will move all data files to their proper
+locations and will generate the following symbolic links:</p>
+<pre><code>$REC/gngg/subjects/0003/fmri/raw/gngg_003_fmri_RS.nii
+$REC/gngg/subjects/0007/fmri/raw/gngg_007_fmri_RS.nii
+</code></pre>
+<p>which are respectively linked to the hard files:</p>
+<pre><code>$REC/gngg/subjects/0003/fmri/orig/subj3fmri.nii
+$REC/gngg/subjects/0007/fmri/orig/subj7fmri.nii
+</code></pre>
+<p>where <code>$REC=/data/recordings/</code>. Once you have done this, you can remove the
+temporary directory tree <strong>~/gngg_day1</strong>.</p>
+</div>
+<div id="footer">
+<p><a href="http://kaba.hilvi.org/remark">Remark</a> documentation system - Page generated 13.10.2011 14:36.</p>
+</div>
+</div>
+</body>
+</html>

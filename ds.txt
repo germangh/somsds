@@ -1,0 +1,35 @@
+The SOMSDS data Structure
+============
+
+[[Parent]]: user_documentation.txt
+
+
+The most up to date details of the data structure are likely to be
+available at the Sleep & Cognition [group wiki][scwiki]. Below we describe
+the main SOMSDS conventions.
+
+[scwiki]: http://192.87.11.193/wiki/
+[scpage]: http://www.nin.knaw.nl/research_groups/van_someren_group/
+[ninpage]: http://www.nin.knaw.nl
+
+Data entities
+--------
+
+The purpose of SOMDS (SOMerenserver Data Structure) is to separate as much as
+possible independent data entities and to allow interactions between such
+entities only via standard interfaces. This separation will hopefully allow for
+improved data safety, easy backup of sensitive data, easy search of data
+relevant to a specific analysis and, therefore, easier replication of analyses.
+The SOMDS contains two independent entities: `$RECORDINGS`, and `$PROJECTS`. The
+former stores raw recording data while the latter stores analyses data (what we
+refer to as a _project_). The standard locations of these two entities are:
+
+	$RECORDINGS = /data/recordings
+	$PROJECTS 	= /data/projects
+
+Follow the links below for more information regarding the organization of 
+experimental ([Recording][recordings]) data and analyses ([Projects][projects])
+ data.
+
+[recordings]: ./recordings.htm
+[projects]: ./projects.htm
