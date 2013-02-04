@@ -36,6 +36,24 @@ that may be used to filter the set of files to be retrieved, e.g. `technique`,
 `device`, `sex`, `age`, etc. See the command line documentation of script 
 `somsds_link2rec` for more information.
 
+
+## Recording IDs, condition IDs, etc...
+
+To produce a list of the available recordings together with a short description:
+
+	somsds_rec_list
+
+To list all valid condition IDs (together with a short description)
+ for recording `ssmd`:
+ 
+	somsds_rec_get ssmd condition
+	
+In general, the accepted values of tag `[tagname]` for recording `[recid]` can be
+listed using:
+
+	somsds_rec_get [recid] [tagname]
+	
+	
 ## Symbolic links
 
 Script `somsds_link2rec` will __not__ create copies of the relevant data files. 
