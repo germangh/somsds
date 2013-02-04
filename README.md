@@ -13,6 +13,9 @@ will only want to know how to retrieve data files from _somsds_.
 
 ## Installation
 
+_somsds_ should work out of the box on most Linux distributions and on Mac OS X. 
+In theory it should work also under Windows with some minor modifications. 
+
 	clone git://github.com/germangh/somsds
 	cd sosmds
 	./somsds_install.pl
