@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Somsds by germangh</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Somsds</h1>
+        <p>somerenserver data structure scripts</p>
+
+        <p class="view"><a href="https://github.com/germangh/somsds">View the Project on GitHub <small>germangh/somsds</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/germangh/somsds/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/germangh/somsds/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/germangh/somsds">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>somsds</h1>
+
+<p>A lightweight system for managing large neuroimaging datasets in a 
+shared computing environment. There are two main components of <em>somsds</em>: </p>
+
+<ul>
+<li>A backend SQL database, which may be queried directly using <code>somsds_sql</code>.</li>
+<li>A Perl interface giving access to the most common use cases: archiving and retrieving data.</li>
+</ul><p>There is no public documentation yet on how to archive data. In any case, only 
+superusers of the shared computing environment can archive data. Thus most users 
+will only want to know how to retrieve data files from <em>somsds</em>.</p>
+
+<h2>Installation</h2>
+
+<p><em>somsds</em> should work out of the box on most Linux distributions and on Mac OS X. 
+In theory it should work also under Windows with some minor modifications. </p>
+
+<pre><code>clone git://github.com/germangh/somsds
+cd sosmds
+./somsds_install.pl
+</code></pre>
+
+<h2>Retrieving data</h2>
+
+<pre><code>somsds_link2rec [recid] [--]
+</code></pre>
+
+<p>where <code>[recid]</code> is the ID of the <em>recording</em> from which data should be retrieved. A
+series of optional arguments will typically follow indicating the subset of data 
+that we want to gain access to. For instance, one could retrieve all structural 
+MRI datasets from recording <code>ssmd</code> using:</p>
+
+<pre><code>somsds_link2rec ssmd --condition rs-ec --modality smri
+</code></pre>
+
+<p>Apart from <code>condition</code>, <code>modality</code>, and <code>subject</code> there are several other <em>tags</em> 
+that may be used to filter the set of files to be retrieved, e.g. <code>subject</code>, <code>technique</code>, 
+<code>device</code>, <code>sex</code>, <code>age</code>, etc. See the command line documentation of script 
+<code>somsds_link2rec</code> for more information.</p>
+
+<h2>Recording IDs, condition IDs, etc...</h2>
+
+<p>To produce a list of the available recordings together with a short description:</p>
+
+<pre><code>somsds_rec_list
+</code></pre>
+
+<p>To list all valid condition IDs (together with a short description)
+ for recording <code>ssmd</code>:</p>
+
+<pre><code>somsds_rec_get ssmd condition
+</code></pre>
+
+<p>In general, the accepted values of tag <code>[tagname]</code> for recording <code>[recid]</code> can be
+listed using:</p>
+
+<pre><code>somsds_rec_get [recid] [tagname]
+</code></pre>
+
+<h2>Symbolic links</h2>
+
+<p>Script <code>somsds_link2rec</code> will <strong>not</strong> create copies of the relevant data files. 
+Instead it will create symbolic links with to the actual data files. The main 
+reasons for this being the desired behaviour are:</p>
+
+<ul>
+<li><p>It is unaffordable (and wasteful) to create copies of the raw data files each 
+time they are retrieved. <em>Raw</em> data files should be (and, in fact, <em>somsds</em> 
+enforces them to be) inmutable so there is no need of keeping multiple copies. </p></li>
+<li><p>Raw data files may have arbitrary file names. In some cases, the names of such 
+files are automatically given by the recording device (e.g. an MR scanner), and 
+those names give no clue of the actual contents of the data file (e.g. Philips MR 
+scanners' physiology files). Lacking standard file naming conventions is a great 
+obstacle to scripting analysis pipelines. By using symbolic links, the <em>somsds</em> 
+system is able to name the symbolic links so that they follow (user configurable) naming 
+conventions. </p></li>
+</ul><h2>License</h2>
+
+<p>Released under the <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/">Creative Commons Attribution-NonCommercial-ShareAlike licence</a></p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/germangh">germangh</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-2923001-7");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
