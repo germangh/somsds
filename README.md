@@ -27,12 +27,12 @@ In theory it should work also under Windows with some minor modifications.
 where `[recid]` is the ID of the _recording_ from which data should be retrieved. A
 series of optional arguments will typically follow indicating the subset of data 
 that we want to gain access to. For instance, one could retrieve all structural 
-MRI datasets for subjects 3 to 10, for condition `rs-ec`, from recording `ssmd` using:
+MRI datasets from recording `ssmd` using:
 
-	somsds_link2rec ssmd --condition rs-ec --modality smri --subject 3..10
+	somsds_link2rec ssmd --condition rs-ec --modality smri
 	
 Apart from `condition`, `modality`, and `subject` there are several other _tags_ 
-that may be used to filter the set of files to be retrieved, e.g. `technique`, 
+that may be used to filter the set of files to be retrieved, e.g. `subject`, `technique`, 
 `device`, `sex`, `age`, etc. See the command line documentation of script 
 `somsds_link2rec` for more information.
 
