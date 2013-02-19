@@ -143,17 +143,36 @@ sub add_file_ext{
 
 	
   # Search for files that need to be described within the directory tree    
-  find(sub {_rename($File::Find::name, $regex, $filext)}, $root); 
+  #find(sub {_rename($File::Find::name, $regex, $filext)}, $root); 
   print RED, "Do you want to rename the files above [y/n]? ", RESET;
   my $choice = <STDIN>;
   chomp $choice;
   unless ($choice eq "y"){
     die "Nothing done!\n";
   }  
-	finddepth(sub {_rename($File::Find::name, $regex, $filext, 1)}, $root);         
+    #finddepth(sub {_add_file_ext($File::Find::name, $regex, $filext, 1)}, $root);         
 }
 
 #####################
+
+# Rename files
+sub file_rename{
+  my ($regex1, $regex2, $root) = (shift, shift, shift);
+
+	
+  # Search for files that need to be described within the directory tree    
+  find(sub {_rename($File::Find::name, $regex1, $regex2)}, $root); 
+  print RED, "Do you want to rename the files above [y/n]? ", RESET;
+  my $choice = <STDIN>;
+  chomp $choice;
+  unless ($choice eq "y"){
+    die "Nothing done!\n";
+  }  
+	finddepth(sub {_rename($File::Find::name, $regex1, $regex2, 1)}, $root);         
+}
+
+#####################
+
 
 # Unzips files recursively using OGE
 sub gunzip{
@@ -179,7 +198,7 @@ sub _gunzip {
 
 ######################
 
-sub _rename {
+sub _add_file_ext {
   my ($fname, $regex, $filext, $rename) = (shift, shift, shift, shift);
   return unless ($fname =~ m%$regex%);
   return if ($fname =~ m%\.$filext$%);
@@ -193,6 +212,20 @@ sub _rename {
 
 ####################
 
+sub _rename {
+  my ($fname, $regex1, $regex2, $rename) = (shift, shift, shift, shift);
+  return unless (-e $fname);
+  my $new_name = $_;
+  $new_name =~ s/$regex1/$regex2/g;
+  $new_name = catfile($File::Find::dir, $new_name);
+  print "$fname\n--->$new_name\n\n";
+  if ($rename){   
+    rename($File::Find::name, $new_name);
+  }
+} 
+
+
+##################
 
 # Generates table headers
 sub _header {

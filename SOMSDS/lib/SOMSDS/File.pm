@@ -82,7 +82,7 @@ sub new {
     condition   => undef,
     session     => undef,
     block       => undef,
-		meta 				=> undef
+    meta        => undef
   );
   
   my $self = {
@@ -245,10 +245,10 @@ sub link_name {
   my $session   = $self->{session}    || '';
   my $block     = $self->{block}      || ''; 
   my $meta      = $self->{meta}       || '';
-  $meta =~ s/[;._\s]/-/g;
-	unless ($rec){
-		die "No recording specified for file $self->{id}\n";
-	}
+  $meta =~ s/[;.\s]/-/g;
+  unless ($rec){
+    die "No recording specified for file $self->{id}\n";
+  }
 
   unless ($subject){
     die "No subject specified for file $self->{id}\n";
@@ -257,11 +257,11 @@ sub link_name {
   unless ($modality){
     die "No modality specified for file $self->{id}\n";
   }
-    
-  
+ 
   # Replace field separator characters that appear within a field
+  # EXCEPT FOR THE META FIELD, WHICH CAN CONTAIN ANY CHARACTER
   for my $field ( \$subject, \$modality, \$condition, \$session, \$block, 
-            \$meta, \$technique, \$device){
+            \$technique, \$device){
 
     $$field =~ s/$sep/$space/g;
     $$field =~ s/\s+/$space/g;
@@ -373,10 +373,10 @@ sub save {
 
 # Helper function for public static method descriptors()
 sub _describe_file {
-	my ($regexp, $ini, $root) = (shift, shift, shift);
-	# Another parameter for valid file extensions within a modality!!!
-	# If it is not a valid extension, skip
-	my $file_regexp = $regexp->{file_id};
+    my ($regexp, $ini, $root) = (shift, shift, shift);
+    # Another parameter for valid file extensions within a modality!!!
+    # If it is not a valid extension, skip
+    my $file_regexp = $regexp->{file_id};
     my $fname = $File::Find::name;
     $fname = File::Spec->abs2rel($fname, $root); 
 
@@ -400,23 +400,25 @@ sub _describe_file {
 			if ($new_value eq $fname){
 				$new_value = '';
 			}else{
-				if ($ini->val($_.'_map', $new_value)){          
-					# Translate the value (_ means translate to empty)
-                    if ($ini->val($_.'_map', $new_value) eq $field_sep){
-                      $new_value = '';
-                    } else {
-					  $new_value = $ini->val($_.'_map', $new_value);	
-                    }
-				}
-           # Remove separator characters                      
-           $new_value =~ s/$field_sep/$space_char/g;
-		   }
-		}else{
-			undef $new_value;	
-		}
-		if ($new_value) {
+                           if ($ini->val($_.'_map', $new_value)){          
+		           # Translate the value (_ means translate to empty)
+                           if ($ini->val($_.'_map', $new_value) eq $field_sep){
+                           $new_value = '';
+                           } else {
+			     $new_value = $ini->val($_.'_map', $new_value);	
+                           }
+			   }
+                           # Remove separator characters
+                           #unless ($_ eq "meta_id"){                      
+                           #$new_value =~ s/$field_sep/$space_char/g;
+                           #}
+	                }	  
+	  }else{
+	     undef $new_value;	
+	  }
+	  if ($new_value) {
           $new_value =~ s/\s+/-/g;  
-          $new_value =~ s/_+/-/g;
+          #$new_value =~ s/_+/-/g;
 			print CSVFILE qq["$new_value",];
 		} else {
 			print CSVFILE ",";

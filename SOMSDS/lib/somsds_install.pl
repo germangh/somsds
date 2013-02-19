@@ -59,7 +59,7 @@ foreach (qw(somsds_archive_rec somsds_unarchive_rec somsds_describe
             somsds_import_rec somsds_rec_get somsds_new_proj somsds_link2rec 
             somsds_add_file_ext somsds_get somsds_link2dir
             somsds_broken_links somsds_fix_links somsds_copy_dir
-            somsds_gunzip somsds_rec_list somsds_protect_dir somsds_unprotect_dir)){
+            somsds_gunzip somsds_rec_list somsds_protect_dir somsds_unprotect_dir somsds_file_rename)){
   my $file = catfile(catdir($module, 'SOMSDS'), $_.'.pl');
   copy($_.'.pl', $file) or die "Copy $_.pl -> $file failed: $!";
   print "copy $_.pl $file\n";
