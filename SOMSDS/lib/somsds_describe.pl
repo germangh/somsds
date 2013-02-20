@@ -12,7 +12,6 @@ use File::Spec::Functions;
 
 
 my $filename;
-my @conf_file;
 my $help;
 
 GetOptions( "filename=s"   => \$filename,	   
@@ -21,6 +20,7 @@ GetOptions( "filename=s"   => \$filename,
 			
 
 my $root = shift;
+my $conf_file = shift;
 
 if ($help || !$root){
   print "*Generates data file descriptors
@@ -36,14 +36,12 @@ dirname           A directory name
 
 ## COMMON OPTIONS
 
-  --conf          Configuration file for non-standard directory structures
-
   --help          Displays this help. Run 'perldoc SOMSDS' for more help
 \n";
   die "\n";
 }
 
-@conf_file   = split(/,/, join(',', @conf_file));
+@conf_file   = split(/,/, $conf_file);
 
 unless (@conf_file) {  
   my ($vol, $dir, $file) = File::Spec->splitpath($0);
