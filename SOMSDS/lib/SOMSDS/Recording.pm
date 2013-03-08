@@ -433,12 +433,15 @@ sub save {
   $rec_table =~ s/\..*$//;
   my $files_table = $somsds_obj->{'files_csv'};;
   $files_table =~ s/\..*$//;
-
+  
   # Remove the recording from the table if it is already there
   my $rec_id = $self->{id};
+  print "\n\nDeleting links from recording $rec_id...";
   my $query = "DELETE FROM $rec_table WHERE id='$rec_id'";
   $somsds_obj->sql($query);
+  print "[done]\n\n";
   # Insert the recording in the recordings table
+  print "Inserting links into recording $rec_id...";
   $query = "INSERT INTO $rec_table VALUES (?,?,?,?,?,?)";
   my $uname = getpwuid( $< );
   my @entry = ( $rec_id,
@@ -448,17 +451,21 @@ sub save {
                 $self->{settings_file},
                 meta_as_string($self->{meta}),
               );
-    $somsds_obj->sql($query, undef, @entry);        
+  $somsds_obj->sql($query, undef, @entry);        
+  print "[done]\n\n";
+  
+  # Insert files
+  my $counter=0;
+  my $num_files = keys %{$self->{file}};
+  my $num_files_by100 = POSIX::ceil($num_files/100);    
+  $|=1; 
+  print "Deleting $num_files files from recording $rec_id...";
+  # Remove all files from this recording
+  $query = "DELETE FROM $files_table WHERE recording='$rec_id'";
+  $somsds_obj->sql($query); 
 
-    # Insert files
-    my $counter=0;
-    my $num_files = keys %{$self->{file}};
+  print "[done]\n\n";
 
-    my $num_files_by100 = POSIX::ceil($num_files/100);    
-    
-    # Remove all files from this recording
-    $query = "DELETE FROM $files_table WHERE recording='$rec_id'";
-    $somsds_obj->sql($query); 
     while (my ($file_id, $file_obj) = each %{$self->file()}){
       $file_obj->save($somsds_obj);
       $counter++;

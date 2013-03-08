@@ -569,7 +569,7 @@ sub _update_file {
     (shift, shift, shift, shift, shift, shift);
 
   return unless ($_ =~ /$file_descr_regex/);
-
+  print "Reading $File::Find::name ...\n\n";
   my $fh = Tie::Handle::CSV->new(csv_parser     => Text::CSV_XS->new(),
                                    file         => $File::Find::name,
                                    header       => 1,
