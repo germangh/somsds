@@ -318,16 +318,11 @@ sub unprotect {
   my $dir = $self->root_path();
   find(sub 
   	{
- 		return if ($File::Find::name =~ m%raw/{0,1}[^/]*$%);
+ 		return if (-l $File::Find::name);
 		chmod 0755, $File::Find::name;
-		my $cmd = "chattr -a \"$File::Find::name\"";
+		my $cmd = "chattr -ia \"$File::Find::name\"";
 		print "$cmd\n";
 		system($cmd);
-		unless (-d $File::Find::name){
-			my $cmd = "chattr -i \"$File::Find::name\"";
-			print "$cmd\n";
-			system($cmd);
-		}
 
   	},
    $dir

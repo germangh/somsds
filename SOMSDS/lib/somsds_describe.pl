@@ -27,12 +27,12 @@ if ($help || !$root){
   
 Usage: 
 
-somsds_describe dirname [--options]
+somsds_describe dirname transfile [--options]
 
 Where:
 
 dirname           A directory name
-
+transfile         An .ini file with the translation configuration
 
 ## COMMON OPTIONS
 
