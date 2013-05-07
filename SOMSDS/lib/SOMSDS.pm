@@ -550,7 +550,7 @@ sub recording {
                 copy($value->{settings_file}, $new_file);
 		$self->{recording}->{$value->id()}->settings_file($new_file);
 		
-		$self->{recording}->{$value->id()}->protect();
+		#$self->{recording}->{$value->id()}->protect();
 
     # Insert the recording to the SOMSDS object and update the database
     $self->{recording}->{$value->id()} = $value;  

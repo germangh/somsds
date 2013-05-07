@@ -288,12 +288,9 @@ sub root_path {
 sub protect {
   #}
   my $self = shift;
-  my $dir = $self->root_path();
+  my $dir = catdir($self->root_path(), 'import');
   find(sub 
   	{
-		return if ($File::Find::name =~ m%raw/{0,1}[^/]*$%);
-		return if ($File::Find::name =~ m%$dir/files_[^/]+.csv$%);
-                return if ($File::Find::name =~ m%$dir/mutable%);
   		chmod 0555, $File::Find::name;
 		my $cmd = "chattr -i \"$File::Find::name\"";
 		print "$cmd\n";	
@@ -316,7 +313,7 @@ sub protect {
 
 sub unprotect {
   my $self = shift;
-  my $dir = $self->root_path();
+  my $dir = catdir($self->root_path(), 'import');
   find(sub 
   	{
  		return if (-l $File::Find::name);
