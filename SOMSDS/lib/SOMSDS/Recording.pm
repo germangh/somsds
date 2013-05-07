@@ -293,6 +293,7 @@ sub protect {
   	{
 		return if ($File::Find::name =~ m%raw/{0,1}[^/]*$%);
 		return if ($File::Find::name =~ m%$dir/files_[^/]+.csv$%);
+                return if ($File::Find::name =~ m%$dir/mutable%);
   		chmod 0555, $File::Find::name;
 		my $cmd = "chattr -i \"$File::Find::name\"";
 		print "$cmd\n";	
