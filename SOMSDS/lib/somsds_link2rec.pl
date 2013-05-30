@@ -46,7 +46,7 @@ my @sessions;
 my @meta;
 my @file_ext;
 my $fasttb = '^.+fasttb.*\.mat$';
-my $giotb = '^.+eeg_scores.*\.mat$';
+my $giotb = '^.+(eeg_scores.*\.mat|eeg_sleep_scores.*\.mat|giotb\.mat)$';
 
 my $root_path;
 

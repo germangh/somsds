@@ -205,6 +205,10 @@ sub _add_file_ext {
   my $new_name = $fname.$filext;
   print "$fname\n--->$new_name\n\n";
   if ($rename){   
+    if (-e $fname || -d $fname){
+       print "\n\n::::::::::: Skipping $new_name : Overwrites existing file\n\n";
+       return;
+    }
     rename($File::Find::name, $new_name);
   }
 } 

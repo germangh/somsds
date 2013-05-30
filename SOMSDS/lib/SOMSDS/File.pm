@@ -377,6 +377,7 @@ sub _describe_file {
     # Another parameter for valid file extensions within a modality!!!
     # If it is not a valid extension, skip
     my $file_regexp = $regexp->{file_id};
+    my $file_exclude_regexp = $regexp->{file_exclude_id};
     my $fname = $File::Find::name;
     $fname = File::Spec->abs2rel($fname, $root); 
 
@@ -385,6 +386,7 @@ sub _describe_file {
     my $space_char = $somsds_cfg->val('link','space_char');
 
 	return unless ($file_regexp && $fname =~ m&$file_regexp&);
+        return if ($file_exclude_regexp && $fname =~ m&$file_exclude_regexp&);
 	# Try to find out subject, mod, cond, sess, block and make an entry in the
 	# descriptor file
 

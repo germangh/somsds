@@ -291,7 +291,8 @@ sub protect {
   my $dir = catdir($self->root_path(), 'import');
   find(sub 
   	{
-  		chmod 0555, $File::Find::name;
+  		return if ($File::Find::name =~ m%import/00%);
+		chmod 0555, $File::Find::name;
 		my $cmd = "chattr -i \"$File::Find::name\"";
 		print "$cmd\n";	
 		system($cmd);
