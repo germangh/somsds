@@ -10,9 +10,11 @@ use Getopt::Long;
 
 my $folder;
 my $help;
+my $isdir;
 
 GetOptions( "folder=s"     => \$folder,   
-            "help"         => \$help);
+            "help"         => \$help,
+            "isdir"        => \$isdir);
 			
 my ($regex, $fileext) = (shift, shift);
 
@@ -32,7 +34,9 @@ fileex            A file extension, e.g. .nii.gz
 
 ## OPTIONS
   
-  --folder        Root folder where to start the file search
+  --folder <dir>  Root folder where to start the file search
+
+  --isdir 	  If this flag is used, then only directories will be renamed
 
   --help          Displays this help. Run 'perldoc SOMSDS' for more help
 \n";
@@ -41,5 +45,5 @@ fileex            A file extension, e.g. .nii.gz
 
 unless($folder){$folder = cwd();}
 
-SOMSDS::add_file_ext($regex, $fileext, $folder);
+SOMSDS::add_file_ext($regex, $fileext, $folder, $isdir);
 

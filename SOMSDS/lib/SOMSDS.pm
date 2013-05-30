@@ -139,7 +139,7 @@ sub new {
 
 # Adds file extension to a set of files
 sub add_file_ext{
-  my ($regex, $filext, $root) = (shift, shift, shift);
+  my ($regex, $filext, $root, $isdir) = (shift, shift, shift);
 	
   # Search for files that need to be described within the directory tree    
   find(sub {_add_file_ext($File::Find::name, $regex, $filext)}, $root); 
@@ -149,7 +149,7 @@ sub add_file_ext{
   unless ($choice eq "y"){
     die "Nothing done!\n";
   }  
-    finddepth(sub {_add_file_ext($File::Find::name, $regex, $filext, 1)}, $root);         
+    finddepth(sub {_add_file_ext($File::Find::name, $regex, $filext, $isdir, 1)}, $root);         
 }
 
 #####################
@@ -198,10 +198,12 @@ sub _gunzip {
 ######################
 
 sub _add_file_ext {
-  my ($fname, $regex, $filext, $rename) = (shift, shift, shift, shift);
+  my ($fname, $regex, $filext, $isdir, $rename) = (shift, shift, shift, shift);
   return unless ($fname =~ m%$regex%);
   return if ($fname =~ m%\.$filext$%);
   return unless (-e $fname || -d $fname);
+  return if ($isdir && !-d $fname);
+  return if (!$isdir && -d $fname);
   my $new_name = $fname.$filext;
   print "$fname\n--->$new_name\n\n";
   if ($rename){   
