@@ -44,6 +44,5 @@ fileex            A file extension, e.g. .nii.gz
 }
 
 unless($folder){$folder = cwd();}
-
 SOMSDS::add_file_ext($regex, $fileext, $folder, $isdir);
 

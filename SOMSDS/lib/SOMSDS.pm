@@ -139,10 +139,10 @@ sub new {
 
 # Adds file extension to a set of files
 sub add_file_ext{
-  my ($regex, $filext, $root, $isdir) = (shift, shift, shift);
-	
+  my ($regex, $filext, $root, $isdir) = (shift, shift, shift, shift);
+  $root = File::Spec->rel2abs($root);	
   # Search for files that need to be described within the directory tree    
-  find(sub {_add_file_ext($File::Find::name, $regex, $filext)}, $root); 
+  find(sub {_add_file_ext($File::Find::name, $regex, $filext, $isdir)}, $root); 
   print RED, "Do you want to rename the files above [y/n]? ", RESET;
   my $choice = <STDIN>;
   chomp $choice;
@@ -198,20 +198,24 @@ sub _gunzip {
 ######################
 
 sub _add_file_ext {
-  my ($fname, $regex, $filext, $isdir, $rename) = (shift, shift, shift, shift);
+  my ($fname, $regex, $filext, $isdir, $rename) = (shift, shift, shift, shift, shift);
   return unless ($fname =~ m%$regex%);
   return if ($fname =~ m%\.$filext$%);
   return unless (-e $fname || -d $fname);
   return if ($isdir && !-d $fname);
   return if (!$isdir && -d $fname);
   my $new_name = $fname.$filext;
-  print "$fname\n--->$new_name\n\n";
+ 
   if ($rename){   
-    if (-e $fname || -d $fname){
-       print "\n\n::::::::::: Skipping $new_name : Overwrites existing file\n\n";
+    if (-e $new_name || -d $new_name){
+       print RED, "\n\n:: Skipping $new_name : Overwrites existing file\n", RESET;
        return;
     }
-    rename($File::Find::name, $new_name);
+    if (rename($File::Find::name, $new_name)){
+        print "$fname\n-->> $new_name\n\n";
+    }      
+  } else {
+    print "$File::Find::name\n-->> $new_name\n\n";
   }
 } 
 
