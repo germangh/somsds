@@ -348,6 +348,7 @@ sub make_folders {
 		}
 	}
   my $path;
+  
   for my $subjid (keys %{$self->{subject}}){
     for my $modid (keys %{$self->{modality}}){
       for my $condid (keys %{$self->{condition}}){
@@ -362,7 +363,7 @@ sub make_folders {
               $path         =~ s/SESSID/$sessid/g;
               $path         =~ s/BLKID/$blkid/g;
               my @paths = split("\n", $path);
-
+            
               foreach (@paths){
                 my $options   = { mode => 0755, verbose => 1, 
                                   owner => $responsible};

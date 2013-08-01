@@ -10,6 +10,7 @@ use Config::IniFiles;
 use File::Spec;
 use File::Find;
 use Shell::Command;
+use File::Copy;
 
 my ($dirIn, $dirOut) = (shift, shift);
 
@@ -44,7 +45,17 @@ print "\n";
 
 sub make_symlink() {
 print $File::Find::name,"\n";
-  if (-d $File::Find::name){
+  if (-l $File::Find::name){
+    # Just copy the symblink
+    my $path = $File::Find::dir;
+    $path =~ s/^$dirIn//;
+    my $linkName = File::Spec->catfile($dirOut, $path, $_);    
+    $path = File::Spec->catdir($dirOut, $path);
+    mkpath $path;
+    my $target = readlink($File::Find::name);
+    symlink $target, $linkName or die "Couldn't create link $linkName: $!\n";
+    print "$linkName\n----->$target\n"; 
+  } elsif (-d $File::Find::name){
     # Create a directory with the same name
     my $path = $File::Find::name;
     $path =~ s/^$dirIn//;
