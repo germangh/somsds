@@ -420,7 +420,7 @@ sub _describe_file {
 	  }
 	  if ($new_value) {
           $new_value =~ s/\s+/-/g;  
-          #$new_value =~ s/_+/-/g;
+          $new_value =~ s/_+/-/g;
 			print CSVFILE qq["$new_value",];
 		} else {
 			print CSVFILE ",";
