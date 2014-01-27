@@ -33,13 +33,13 @@ our @ISA = qw(Exporter);
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-	
+
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-	
+
 );
 
 our $VERSION = '0.01';
@@ -50,13 +50,13 @@ our $AUTOLOAD;
 my ($vol, $dir, $file) = File::Spec->splitpath($0);
 my $somsds_file;
 if ($vol){
-  $somsds_file = abs_path catfile($vol, $dir,'SOMSDS.ini'); 
+  $somsds_file = abs_path catfile($vol, $dir,'SOMSDS.ini');
 } else {
-  $somsds_file = abs_path catfile($dir,'SOMSDS.ini'); 
+  $somsds_file = abs_path catfile($dir,'SOMSDS.ini');
 }
-unless (-e $somsds_file){  
-  $somsds_file = '/etc/SOMSDS.ini'; 
-} 
+unless (-e $somsds_file){
+  $somsds_file = '/etc/SOMSDS.ini';
+}
 unless (-e $somsds_file){
   croak "I could not find the configuration file $somsds_file\n";
 }
@@ -84,12 +84,12 @@ sub new {
     block       => undef,
     meta        => undef
   );
-  
+
   my $self = {
     _permitted => \%fields,
     %fields,
   };
-  
+
   $self->{id} = shift;
   my $fields = shift;
   if ($fields){
@@ -98,10 +98,10 @@ sub new {
       if ($fields->{$_}) {$self->{$_} = $fields->{$_}};
     }
   }
-  
+
   bless $self, $class;
   return $self;
-}  
+}
 
 
 ###################
@@ -110,11 +110,11 @@ sub new {
 # generated
 sub descriptors {
   my $root = shift;
-  my $descr_subj;  
+  my $descr_subj;
 
-  while (my $ini_file = shift){   
-    my $ini = new Config::IniFiles(-file => $ini_file) || 
-      croak "I can't access the configuration file $ini_file:\n";    
+  while (my $ini_file = shift){
+    my $ini = new Config::IniFiles(-file => $ini_file) ||
+      croak "I can't access the configuration file $ini_file:\n";
 
     my $iniCopy = catfile($root, basename($ini_file));
     if (-e $iniCopy){
@@ -125,16 +125,16 @@ sub descriptors {
     }
 
 
-    cp($ini_file, $iniCopy);   
-    system("chattr +a $root"); 
+    cp($ini_file, $iniCopy);
+    system("chattr +a $root");
 
-    my $descr_file		= $somsds_cfg->val('descriptor', 'file');    
-      
+    my $descr_file		= $somsds_cfg->val('descriptor', 'file');
+
     # Strip quotes from regular expressions
     my %regexp;
-  	foreach (qw(file_id subject_id modality_id device_id technique_id 
+  	foreach (qw(file_exclude_id file_id subject_id modality_id device_id technique_id
                 condition_id session_id block_id
-                  meta_id)){	
+                  meta_id)){
 			if ($ini->exists($_,'regexp')){
 	    	$regexp{$_} = $ini->val($_,'regexp');
 			} else {
@@ -143,30 +143,30 @@ sub descriptors {
       next unless $regexp{$_};
   		$regexp{$_} =~ s/^"(.*)"$/$1/;
   	}
-    
-    # Generate an empty file descriptor file    
+
+    # Generate an empty file descriptor file
     my $name = fileparse($ini_file, qr/\.[^.]*/);
     $name =~ s/[._]/-/g;
 
-    $descr_file =~ s/(\.[^\.]+)//;      
+    $descr_file =~ s/(\.[^\.]+)//;
     $descr_file = catfile($root, $descr_file."_$name$1");
-    open (CSVFILE, '>'.$descr_file) || 
+    open (CSVFILE, '>'.$descr_file) ||
       croak "I could not open $descr_file: $!\n";
      print CSVFILE
       qq["id","subject","modality","device","technique","condition","session","block","meta"],
            "\n";
-     #print "Creating file descriptions: $descr_file..."; $|++; 
+     #print "Creating file descriptions: $descr_file..."; $|++;
     print "$descr_file\n";
-    # Search for files that need to be described within the directory tree    
+    # Search for files that need to be described within the directory tree
     find(
-    	sub 
+    	sub
     	{
     		_describe_file(\%regexp, $ini, $root);
     	},
-    	$root); 
+    	$root);
     close(CSVFILE);
     chmod 0755, $descr_file or die "Coudn't chmod $descr_file: $!";
-    #print "[done]\n";    
+    #print "[done]\n";
   }
 
 }
@@ -243,7 +243,7 @@ sub link_name {
   my $device    = $self->{device}     || '';
   my $condition = $self->{condition}  || '';
   my $session   = $self->{session}    || '';
-  my $block     = $self->{block}      || ''; 
+  my $block     = $self->{block}      || '';
   my $meta      = $self->{meta}       || '';
   $meta =~ s/[;.\s]/-/g;
   unless ($rec){
@@ -257,16 +257,16 @@ sub link_name {
   unless ($modality){
     die "No modality specified for file $self->{id}\n";
   }
- 
+
   # Replace field separator characters that appear within a field
   # EXCEPT FOR THE META FIELD, WHICH CAN CONTAIN ANY CHARACTER
-  for my $field ( \$subject, \$modality, \$condition, \$session, \$block, 
+  for my $field ( \$subject, \$modality, \$condition, \$session, \$block,
             \$technique, \$device){
 
     $$field =~ s/$sep/$space/g;
     $$field =~ s/\s+/$space/g;
   }
-  
+
   # Directory where the links will be located
   my $path      = $path_pattern;
   my @path      = split("\n", $path);
@@ -306,7 +306,7 @@ sub link_name {
     $file_ext = $1;
   }
 
-  $link_name = catfile($path,$link_name.$file_ext);   
+  $link_name = catfile($path,$link_name.$file_ext);
 }
 
 ###################
@@ -328,7 +328,7 @@ sub _class_autoload {
 
   if ($value) {
     unless (ref($value) eq $force_type) {
-      croak "$self is not an object of class $force_type!"    
+      croak "$self is not an object of class $force_type!"
     }
     $self->{$name} = $value;
     return $self;
@@ -341,15 +341,15 @@ sub save {
   my $files_table = $somsds_cfg->val('somsds', 'files_csv');
   $files_table =~ s/\..*$//;
 
-  # We assume that all files from this recordings have been removed  
+  # We assume that all files from this recordings have been removed
   my $query = "INSERT INTO $files_table VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
   my $file_id = $self->id();
-  my $uname = getpwuid( $< );  
+  my $uname = getpwuid( $< );
   my @entry = ( $file_id,
-                $uname, 
+                $uname,
                 $time{'yyyy/mm/ddThh:mm:ss'},
                 $self->{recording},
-                $self->{subject},                
+                $self->{subject},
                 $self->{sex},
                 $self->{age},
                 $self->{group},
@@ -379,54 +379,54 @@ sub _describe_file {
     my $file_regexp = $regexp->{file_id};
     my $file_exclude_regexp = $regexp->{file_exclude_id};
     my $fname = $File::Find::name;
-    $fname = File::Spec->abs2rel($fname, $root); 
+    $fname = File::Spec->abs2rel($fname, $root);
 
-    # Field separator and space character
-    my $field_sep = $somsds_cfg->val('link','field_sep');
-    my $space_char = $somsds_cfg->val('link','space_char');
+# Field separator and space character
+my $field_sep = $somsds_cfg->val('link','field_sep');
+my $space_char = $somsds_cfg->val('link','space_char');
 
-	return unless ($file_regexp && $fname =~ m&$file_regexp&);
-        return if ($file_exclude_regexp && $fname =~ m&$file_exclude_regexp&);
-	# Try to find out subject, mod, cond, sess, block and make an entry in the
-	# descriptor file
+return unless ($file_regexp && $fname =~ m&$file_regexp&);
+return if ($file_exclude_regexp && $fname =~ m&$file_exclude_regexp&);
+# Try to find out subject, mod, cond, sess, block and make an entry in the
+# descriptor file
 
 	print CSVFILE qq["$fname",];
-	foreach (qw(subject_id modality_id device_id technique_id condition_id 
+	foreach (qw(subject_id modality_id device_id technique_id condition_id
               session_id block_id meta_id)){
 		my $this_regexp = $regexp->{$_};
-		
+
 		my $new_value = $fname;
 
 		if ($this_regexp) {
-			eval('$new_value =~'."$this_regexp;");  
+			eval('$new_value =~'."$this_regexp;");
 			if ($new_value eq $fname){
 				$new_value = '';
 			}else{
-                           if ($ini->val($_.'_map', $new_value)){          
+                           if ($ini->val($_.'_map', $new_value)){
 		           # Translate the value (_ means translate to empty)
                            if ($ini->val($_.'_map', $new_value) eq $field_sep){
                            $new_value = '';
                            } else {
-			     $new_value = $ini->val($_.'_map', $new_value);	
+			     $new_value = $ini->val($_.'_map', $new_value);
                            }
 			   }
                            # Remove separator characters
-                           #unless ($_ eq "meta_id"){                      
+                           #unless ($_ eq "meta_id"){
                            #$new_value =~ s/$field_sep/$space_char/g;
                            #}
-	                }	  
+	                }
 	  }else{
-	     undef $new_value;	
+	     undef $new_value;
 	  }
 	  if ($new_value) {
-          $new_value =~ s/\s+/-/g;  
+          $new_value =~ s/\s+/-/g;
           $new_value =~ s/_+/-/g;
 			print CSVFILE qq["$new_value",];
 		} else {
 			print CSVFILE ",";
 		};
 	}
- 
+
 	print CSVFILE "\n";
 }
 
@@ -435,14 +435,14 @@ sub _describe_file {
 
 sub AUTOLOAD {
   my $self = shift;
-  my $type = ref($self) or 
-    croak "$self is not an object\n";   
+  my $type = ref($self) or
+    croak "$self is not an object\n";
   my $name = $AUTOLOAD;
   $name =~ s/.*://;
   unless (exists $self->{_permitted}->{$name}){
     croak "Can't access $name field in class $type\n";
   }
-  
+
   if (@_){
     return $self->{$name} = shift;
   } else {
