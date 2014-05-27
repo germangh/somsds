@@ -664,24 +664,35 @@ sub _update_file {
     my $path_pattern  = $somsds_cfg->val('Recording', 'path_pattern');
     my $link_name     = $file->link_name();
     my $file_name     = $File::Find::name;
+    my $ignored_file;
     if (exists $links->{$link_name}){
+      my $db_abs_listed_filename
+      = File::Spec->rel2abs($links->{$link_name}->{item},
+          catdir($self->{root_path}, $self->{db_folder}));
+      if ((stat($abs_listed_filename))[9]
+          > (stat($db_abs_listed_filename))[9]) {
+          # Replace existing with newer file
+          $ignored_file = $db_abs_listed_filename;
+      } else {
+         $ignored_file = $abs_listed_filename;
+         $links->{$link_name} = {file   => $file_name,
+                                item    => $db_rel_listed_filename,
+                                lineno  => $counter};
+      }
       carp
         RED, "Line $links->{$link_name}->{lineno} of descriptor file:\n".
         "$links->{$link_name}->{file}\n".
-		"which describes:\n".
-		"$links->{$link_name}->{item}\n".
+        "which describes:\n".
+        "$links->{$link_name}->{item}\n".
         "seems to duplicate line $counter of file:\n".
         "$file_name\n".
-		"which describes file:\n".
-		"$db_rel_listed_filename\n".
+        "which describes file:\n".
+        "$db_rel_listed_filename\n".
         "Both lines generate the link:\n $link_name\n".
         "It is recommended to remove or edit one of those two lines and run ".
         "'somsds_rec_update $rec'\n".
-        "Ignoring $listed_filename", RESET, "\n";
+        "Ignoring $ignored_file", RESET, "\n";
     }
-    $links->{$link_name} = {file    => $file_name,
-                            item    => $db_rel_listed_filename,
-                            lineno  => $counter};
 
     $link_name =~ m|^(.+)/[^/]+$|;
     if (-e $link_name){

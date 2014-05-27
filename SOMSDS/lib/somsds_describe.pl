@@ -14,18 +14,18 @@ use File::Spec::Functions;
 my $filename;
 my $help;
 
-GetOptions( "filename=s"   => \$filename,	   
-            "conf=s"       => \@conf_file,   
+GetOptions( "filename=s"   => \$filename,
+            "conf=s"       => \@conf_file,
             "help"         => \$help);
-			
+
 
 my $root = shift;
 my $conf_file = shift;
 
 if ($help || !$root){
   print "*Generates data file descriptors
-  
-Usage: 
+
+Usage:
 
 somsds_describe dirname transfile [--options]
 
@@ -43,11 +43,11 @@ transfile         An .ini file with the translation configuration
 
 @conf_file   = split(/,/, $conf_file);
 
-unless (@conf_file) {  
+unless (@conf_file) {
   my ($vol, $dir, $file) = File::Spec->splitpath($0);
-  my $tmp = abs_path catfile($dir,'SOMSDS.ini');  
+  my $tmp = abs_path catfile($dir,'SOMSDS.ini');
   if (-e $tmp){
-    push @conf_file, $tmp;  
+    push @conf_file, $tmp;
   }else{
     push @conf_file, '/etc/SOMSDS.ini';
   }
@@ -63,7 +63,7 @@ foreach (@conf_file){
 unless (@files){
 	my $files = join(',', @conf_file);
         die "I could not find any of the specified configuration file(s): $files\n";
-    
+
 }
 
 

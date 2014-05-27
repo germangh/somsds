@@ -379,6 +379,7 @@ sub _describe_file {
     my $file_regexp = $regexp->{file_id};
     my $file_exclude_regexp = $regexp->{file_exclude_id};
     my $fname = $File::Find::name;
+    return if (-l $fname);
     $fname = File::Spec->abs2rel($fname, $root);
 
 # Field separator and space character
