@@ -1,4 +1,0 @@
-Name translation files
-==========
-
-[[Parent]]: implementation.txt

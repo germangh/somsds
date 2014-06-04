@@ -1,6 +1,0 @@
-User-defined classes
-==========
-
-[[Parent]]: core_stuff.txt
-
-

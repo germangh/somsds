@@ -1,5 +1,0 @@
-Recording settings files
-==========
-
-
-[[Parent]]: implementation.txt

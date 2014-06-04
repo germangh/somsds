@@ -1,4 +1,0 @@
-Link configuration files
-==========
-
-[[Parent]]: implementation.txt
