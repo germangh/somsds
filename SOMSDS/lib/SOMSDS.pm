@@ -777,7 +777,7 @@ sub make_proj_folders {
 
   # set ACL permissions so that all project members have full access
   foreach (@users){
-      $cmd = "setfacl -R -m d:user:rwx $proj_folder";
+      $cmd = "setfacl -R -m d:user:$_:rwx $proj_folder";
       print $cmd,"\n";
       `$cmd`;
   }
