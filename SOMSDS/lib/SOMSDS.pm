@@ -755,10 +755,10 @@ sub make_proj_folders {
   my ($self, $proj_id, $users) = (shift, shift, shift);
   my @users = @$users;
   my $proj_folder = catdir($self->{root_path}, $self->{proj_folder}, $proj_id);
-	my $proj_group = $proj_id;
+  my $proj_group = $proj_id;
   $proj_group =~ s/[-]//g;
 
-	my $cmd;
+  my $cmd;
 
   my $path = $somsds_cfg->val('project', 'folders');
   my @paths = split("\n", $path);
@@ -768,16 +768,19 @@ sub make_proj_folders {
     make_path $new_path, $options;
   }
   # change the ownwerships
-  if ($^O eq 'darwin'){
-  	$cmd = "chown -R $users[0] $users[0]";
-  } else {
-    $cmd = "chown -R $users[0]:$users[0] $proj_folder";
-  }
+  $cmd = "chown -R $users[0]:$users[0] $proj_folder";
   print $cmd,"\n";
   `$cmd`;
   $cmd = "chmod -R 0775 $proj_folder\n";
   print $cmd;
   `$cmd`;
+
+  # set ACL permissions so that all project members have full access
+  foreach (@users){
+      $cmd = "setfacl -R -m d:user:rwx $proj_folder";
+      print $cmd,"\n";
+      `$cmd`;
+  }
 }
 
 #####################
