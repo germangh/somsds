@@ -596,7 +596,7 @@ sub _update_file {
     my $listed_filename;
     # Check that the file name is valid and that the file actually exists
     unless ($listed_filename = abs_path $line->{'id'}){
-      print RED,
+      carp RED,
         "Warning: Invalid filename in line $counter of descriptor file:
                   $File::Find::name
         ", RESET, "\n\n";
@@ -604,7 +604,7 @@ sub _update_file {
     }
 
     unless (-e $listed_filename){
-      print RED,
+      carp RED,
         "Warning: I could not find file $listed_filename
                   File is listed in line $counter of descriptor file:
                   $File::Find::name
@@ -646,7 +646,7 @@ sub _update_file {
     $listed_filename =~ /(.[^.]*)$/;
 	if ($formats->{"$line->{modality}"} &&
     none {uc($1) eq uc($_)} @{$formats->{"$line->{modality}"}}){
-	  print RED,"Warning: Invalid extension $1 for modality $line->{modality}\n".
+	  carp RED,"Warning: Invalid extension $1 for modality $line->{modality}\n".
 	  "         Allowed extensions are: @{$formats->{$line->{modality}}}\n",
       "         Ignoring $listed_filename", RESET,"\n\n";
 	  next CSVLINE;
