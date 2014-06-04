@@ -83,7 +83,7 @@ chmod 0755, $file;
 # Configuration files
 foreach (qw(SOMSDS.ini)){
   my $file = catfile($module, 'SOMSDS', $_);
-  copy($_, $file ) or die "Copy failed: $!";
+  copy($_, $file ) or die "Copy failed for $file: $!";
   print "copy $_ $file\n";
   my $link_name = catfile($conf_dir, $_);
   if ($^O =~ m/^MSWin/){
