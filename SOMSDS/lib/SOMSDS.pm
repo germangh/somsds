@@ -780,6 +780,9 @@ sub make_proj_folders {
       $cmd = "setfacl -R -m d:user:$_:rwx $proj_folder";
       print $cmd,"\n";
       `$cmd`;
+      $cmd = "setfacl -R -m user:$_:rwx $proj_folder";
+      print $cmd,"\n";
+      `$cmd`;
   }
 }
 
