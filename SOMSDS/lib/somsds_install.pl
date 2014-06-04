@@ -77,7 +77,7 @@ foreach (qw(somsds_archive_rec somsds_unarchive_rec somsds_describe
 
 # Copy the module file and the configuration file
 $file = catfile($module, "SOMSDS.pm");
-copy("SOMSDS.pm", $file) or die "Copy failed: $!";
+copy("SOMSDS.pm", $file) or die "Copy failed for $file: $!";
 chmod 0755, $file;
 
 # Configuration files
