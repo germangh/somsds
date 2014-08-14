@@ -1,9 +1,6 @@
 #!/usr/bin/perl
 # (c) German Gomez-Herrero, g.gomez@nin.knaw.nl
 
-# Description: SOMSDS controller module
-# Documentation: core_stuff.txt
-
 
 package SOMSDS;
 use SOMSDS::Recording;

@@ -8,7 +8,7 @@ use Getopt::Long;
 my $root_path;
 my $help;
 
-GetOptions( "root=s"		              => \$root_path,
+GetOptions( "root=s"	              => \$root_path,
             "help"                    => \$help
           );
 
